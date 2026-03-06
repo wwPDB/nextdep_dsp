@@ -1,0 +1,99 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nextdep_dsp"
+version = "0.1.0"
+description = "Prepares data to be deposited into OneDep system through the Deposition API."
+readme = "README.md"
+authors = [
+  {name = "Weslley M Bueno", email = "wbueno@ebi.ac.uk"},
+  {name = "James Smith", email = "james.smith@rcsb.org"}
+]
+maintainers = [
+  {name = "Weslley M Bueno", email = "wbueno@ebi.ac.uk"},
+  {name = "James Smith", email = "james.smith@rcsb.org"}
+]
+classifiers = [
+    "Typing :: Typed",
+    # TODO: Add additional classifiers as needed
+]
+license = {text = "MIT"}
+dependencies = [
+  "typer",
+  "rich",
+]
+requires-python = ">= 3.12"
+
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typecheck" },
+]
+lint = [
+    "ruff",
+]
+test = [
+    "coverage",
+    "pytest",
+]
+typecheck = [
+    "ty",
+]
+docs = [
+    "zensical",
+    "mkdocstrings-python",
+]
+
+# [project.urls]
+# bugs = "https://github.com/wmorellato/nextdep_dsp/issues"
+# changelog = "https://github.com/wmorellato/nextdep_dsp/releases"
+# documentation = "https://wmorellato.github.io/nextdep_dsp/"
+# homepage = "https://github.com/wmorellato/nextdep_dsp"
+
+[project.scripts]
+nextdep_dsp = "nextdep_dsp.cli:app"
+
+[tool.ty]
+# All rules are enabled as "error" by default; no need to specify unless overriding.
+# Example override: relax a rule for the entire project (uncomment if needed).
+# rules.TY015 = "warn"  # For invalid-argument-type, warn instead of error.
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+source = ["src/", "tests/"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 50
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "@overload",
+    "@typing.overload",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
+
+[tool.uv]
+package = true
+default-groups = ["dev"]
