@@ -1,6 +1,6 @@
 import logging
 from json import JSONDecodeError
-from typing import Dict, List, Union
+from typing import Union
 
 import requests
 import requests.packages
@@ -63,17 +63,17 @@ class RestAdapter:
         self,
         http_method: str,
         endpoint: str,
-        params: Dict = None,
-        data: Union[Dict, List] = None,
-        files: Dict = None,
+        params: dict = None,
+        data: Union[dict, list] = None,
+        files: dict = None,
         content_type: str = "application/json",
     ) -> Response:
         """
         Private method to perform API calls
         :param http_method: GET/POST/DELETE
         :param endpoint: endpoint path
-        :param params: Dictionary with requests params
-        :param data: Dictionary with request data
+        :param params: dictionary with requests params
+        :param data: dictionary with request data
         :param files: Files to be uploaded
         :param content_type Request content type
         :return: API Response
@@ -130,11 +130,11 @@ class RestAdapter:
                 raise InvalidDepositSiteException(data_out["extras"]["base_url"])
         return Response(response.status_code, response.reason, data_out)
 
-    def get(self, endpoint: str, params: Dict = None, content_type: str = "application/json") -> Response:
+    def get(self, endpoint: str, params: dict = None, content_type: str = "application/json") -> Response:
         """
         Perform GET requests
         :param endpoint: endpoint path
-        :param params: Dictionary with requests params
+        :param params: dictionary with requests params
         :param content_type Request content type
         :return: API Response
         """
@@ -143,16 +143,16 @@ class RestAdapter:
     def post(
         self,
         endpoint: str,
-        params: Dict = None,
-        data: Union[Dict, List] = None,
-        files: Dict = None,
+        params: dict = None,
+        data: Union[dict, list] = None,
+        files: dict = None,
         content_type: str = "application/json",
     ) -> Response:
         """
         Perform GET requests
         :param endpoint: endpoint path
-        :param params: Dictionary with requests params
-        :param data: Dictionary with requests data
+        :param params: dictionary with requests params
+        :param data: dictionary with requests data
         :param files: Files to be uploaded
         :param content_type Request content type
         :return: API response
@@ -162,13 +162,13 @@ class RestAdapter:
         )
 
     def delete(
-        self, endpoint: str, params: Dict = None, data: Dict = None, content_type: str = "application/json"
+        self, endpoint: str, params: dict = None, data: dict = None, content_type: str = "application/json"
     ) -> Response:
         """
         Perform DELETE requests
         :param endpoint: endpoint path
-        :param params: Dictionary with requests params
-        :param data: Dictionary with requests data
+        :param params: dictionary with requests params
+        :param data: dictionary with requests data
         :param content_type Request content type
         :return: API response
         """

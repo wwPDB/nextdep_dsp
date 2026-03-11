@@ -7,7 +7,7 @@ from nextdep_dsp.deposition.enum import EMSubType, ExperimentType, FileType, Sta
 class Response:
     """Class representing an API response"""
 
-    def __init__(self, status_code: int, message: str = "", data: dict | list = None):
+    def __init__(self, status_code: int, message: str = "", data: Union[dict, list] = None):
         """
         Constructor for Response
         :param status_code: Response status code
