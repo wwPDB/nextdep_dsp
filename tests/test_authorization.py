@@ -48,3 +48,5 @@ def test_get_api_key():
     assert not os.path.exists(tokenfile), "Token should not exist"
     assert set_api_key(TEST_TOKEN, TEST_CONFIG), "Token not set correctly"
     assert get_api_key(TEST_CONFIG) == TEST_TOKEN, "Token not returned correctly"
+    Path(tokenfile).unlink()
+    assert not os.path.exists(tokenfile), "Token file not deleted"
