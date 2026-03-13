@@ -1,6 +1,8 @@
 import os
 import configparser
 import re
+import tempfile
+import atexit
 from pathlib import Path
 from nextdep_dsp.authorization.token import load_token_config, set_api_key, get_api_key
 
@@ -42,11 +44,9 @@ def test_min_length_validation():
 
 def test_get_api_key():
     config = load_token_config(TEST_CONFIG)
-    tokenfile = config.get("token", "file_path")
-    if Path(tokenfile).exists():
-        Path(tokenfile).unlink()
-    assert not os.path.exists(tokenfile), "Token should not exist"
-    assert set_api_key(TEST_TOKEN, TEST_CONFIG), "Token not set correctly"
-    assert get_api_key(TEST_CONFIG) == TEST_TOKEN, "Token not returned correctly"
-    Path(tokenfile).unlink()
-    assert not os.path.exists(tokenfile), "Token file not deleted"
+    with tempfile.NamedTemporaryFile(delete=True, mode='w+t') as tokenfile:
+        config.set("token", "file_path", tokenfile.name)
+        with open(TEST_CONFIG, "w") as f:
+            config.write(f)
+        assert set_api_key(TEST_TOKEN, TEST_CONFIG), "Token not set correctly"
+        assert get_api_key(TEST_CONFIG) == TEST_TOKEN, "Token not returned correctly"
