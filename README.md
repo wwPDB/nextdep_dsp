@@ -4,6 +4,30 @@
 
 Prepares data to be deposited into OneDep system through the Deposition API.
 
+## Authentication
+
+This package requires a OneDep API JWT to authenticate with the deposition API. The token can be provided in one of two ways:
+
+**File (default):** Store the JWT in `~/.onedepapi.jwt`. The file should contain only the token string (plain text, no quotes).
+
+```bash
+echo "your.jwt.token" > ~/.onedepapi.jwt
+```
+
+**Environment variable:** Set the `ONEDEP_API_KEY` environment variable.
+
+```bash
+export ONEDEP_API_KEY="your.jwt.token"
+```
+
+The package prefers the file by default. You can also use the helper to store the token programmatically:
+
+```python
+from nextdep_dsp.authorization.token import set_api_key
+
+set_api_key("your.jwt.token")
+```
+
 ## Features
 
 * TODO
