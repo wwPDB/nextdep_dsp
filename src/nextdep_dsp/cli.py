@@ -12,8 +12,7 @@ console = Console()
 @app.command()
 def main() -> None:
     """Console script for nextdep_dsp."""
-    console.print("Replace this message by putting your code into "
-               "nextdep_dsp.cli.main")
+    console.print("Replace this message by putting your code into nextdep_dsp.cli.main")
     console.print("See Typer documentation at https://typer.tiangolo.com/")
     utils.do_something_useful()
 
