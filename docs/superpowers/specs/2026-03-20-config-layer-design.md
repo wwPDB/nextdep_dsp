@@ -23,7 +23,10 @@ No new class is exposed to users — `DepositApi` works exactly as today for cal
 
 `ver` and `logger` are intentionally excluded from the config layer — they are implementation details, not user-facing configuration.
 
-**Behavioural change note:** The existing `DepositApi.__init__` defaults are `api_key=""`, `ssl_verify=True`, `redirect=True`. After this change, callers that omit these args will get values from the config layer instead of the hardcoded defaults. This is the intended behaviour. Callers that previously relied on passing `api_key=""` explicitly (e.g. for unauthenticated use) will now get a `DepositApiException` — this is an intentional breaking change.
+**Behavioural change note:** This is a pre-1.0 package; semver breaking-change constraints do not apply. However, a `CHANGELOG` entry is required. The key changes:
+- Callers that omit `api_key`, `ssl_verify`, or `redirect` will now get values from the config layer instead of the hardcoded defaults — this is the intended behaviour.
+- Callers that previously passed `api_key=""` explicitly will now get a `DepositApiException` — intentional breaking change.
+- The parameter order in `__init__` is preserved to avoid breaking positional callers.
 
 ## Config File
 
@@ -75,10 +78,16 @@ Do not use `distutils.util.strtobool` — it is deprecated and removed in Python
 
 ## `config.py` Module
 
+`api_key` uses `Optional[str] = None` as its sentinel so "not configured" is represented as `None`, distinct from an intentionally empty string. All other fields use their hardcoded defaults directly.
+
 ```python
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Optional
+
 @dataclass
 class DepositConfig:
-    api_key: str = ""
+    api_key: Optional[str] = None
     hostname: str = "https://deposit.wwpdb.org/deposition"
     ssl_verify: bool = True
     redirect: bool = True
@@ -86,34 +95,32 @@ class DepositConfig:
     @classmethod
     def load(cls, **overrides) -> "DepositConfig":
         # 1. Start with dataclass defaults
-        # 2. Merge config file values (if file exists)
+        # 2. Merge config file values (if file exists and [default] section present)
         # 3. Merge env vars
-        # 4. Apply caller-supplied overrides
-        # Unknown keys in overrides are silently ignored
+        # 4. Apply caller-supplied overrides (only keys present in DepositConfig fields)
         ...
 ```
 
-`DepositApi.__init__` passes only the known config keys that the caller explicitly set (not `None`). `ver` and `logger` are excluded from the overrides dict:
+`DepositApi.__init__` preserves the **existing parameter order** (`hostname, api_key, ver, ssl_verify, redirect, logger`) to avoid breaking positional callers. Only non-`None` values are forwarded as overrides — this correctly passes `False` (which is not `None`) but excludes unset args:
 
 ```python
-def __init__(self, hostname=None, api_key=None, ssl_verify=None, redirect=None, ver="v1", logger=None):
+def __init__(self, hostname=None, api_key=None, ver="v1", ssl_verify=None, redirect=None, logger=None):
     overrides = {
         k: v for k, v in {"hostname": hostname, "api_key": api_key,
                            "ssl_verify": ssl_verify, "redirect": redirect}.items()
         if v is not None
     }
     config = DepositConfig.load(**overrides)
+    self._hostname = config.hostname  # set explicitly before _connect
     self._api_key = config.api_key
     self._ssl_verify = config.ssl_verify
     self._redirect = config.redirect
     self._version = ver
     self._logger = logger
-    self._connect(config.hostname)  # sets self._hostname internally
+    self._connect(config.hostname)  # also sets self._hostname internally (harmless)
 ```
 
-`_connect` sets `self._hostname` internally — do not set `self._hostname` before calling `_connect` to avoid a redundant double-assignment.
-
-All existing call sites that pass explicit args continue to work unchanged.
+`_connect` guards with `if hostname:` internally, so `self._hostname` must be set before calling it — the direct assignment above ensures this.
 
 ## Error Handling
 
@@ -123,11 +130,12 @@ All existing call sites that pass explicit args continue to work unchanged.
 | Config file exists but `[default]` section absent | Silently skip — treat as empty config |
 | Config file unreadable (`PermissionError`, etc.) | Propagate as-is — do not wrap |
 | Malformed TOML | Raise `ValueError` with file path and parse error message |
-| Unknown keys in file | Silently ignore — forward-compatible |
+| Unknown keys in TOML file | Silently ignore — forward-compatible |
+| Empty string hostname (`ONEDEP_HOSTNAME=""` or `hostname = ""` in file) | Treat as absent — fall through to default |
 | Invalid bool env var | Raise `ValueError` with accepted values listed (see `_parse_bool` above) |
-| `api_key` resolves to `""` or is absent | Raise `DepositApiException("No API key configured. Set ONEDEP_API_KEY or add api_key to ~/.config/nextdep/config.toml", 401)` at `DepositApi.__init__` time — fail fast before any HTTP call |
+| `api_key` resolves to `None` or `""` | Raise `DepositApiException("No API key configured. Set ONEDEP_API_KEY or add api_key to ~/.config/nextdep/config.toml", 401)` at `DepositApi.__init__` time — fail fast before any HTTP call |
 
-**Note:** `ONEDEP_API_KEY=""` (empty string) is treated the same as absent — raises `DepositApiException`. An explicit `api_key=""` constructor arg also raises.
+**Note:** `ONEDEP_API_KEY=""` (empty string) is treated as absent — raises `DepositApiException`. An explicit `api_key=""` constructor arg also raises.
 
 ## Testing
 
@@ -136,12 +144,15 @@ All existing call sites that pass explicit args continue to work unchanged.
 | Resolution order: constructor > env var > file > defaults | `monkeypatch` + `tmp_path` config file |
 | Valid TOML loads correctly | `tmp_path` fixture |
 | Malformed TOML raises `ValueError` | `tmp_path` fixture |
+| Config file present but no `[default]` section → silently skipped | `tmp_path` fixture |
 | Bool env var: `"false"` → `False`, `"FALSE"` → `False`, `"0"` → `False` | `monkeypatch` |
 | Bool env var: `"true"` → `True`, `"1"` → `True` | `monkeypatch` |
 | Invalid bool env var raises `ValueError` | `monkeypatch` |
+| `ssl_verify=False` passed explicitly is not filtered out | Direct instantiation |
 | `api_key` absent → raises `DepositApiException` at init | Direct instantiation, no HTTP mock needed |
 | `api_key=""` (explicit empty string) → raises `DepositApiException` | Direct instantiation |
 | `ONEDEP_API_KEY=""` → raises `DepositApiException` | `monkeypatch` |
+| `ONEDEP_HOSTNAME=""` → falls back to default hostname | `monkeypatch` |
 | Existing tests unchanged — explicit args still override config | No test changes required |
 
 No new test dependencies — `monkeypatch` and `tmp_path` are built into pytest.
@@ -151,6 +162,7 @@ No new test dependencies — `monkeypatch` and `tmp_path` are built into pytest.
 | File | Change |
 |---|---|
 | `src/nextdep_dsp/config.py` | New — `DepositConfig` dataclass + `load()` + `_parse_bool()` |
-| `src/nextdep_dsp/deposition/deposit_api.py` | Use `DepositConfig.load()` in `__init__`; assign fields from config object |
+| `src/nextdep_dsp/deposition/deposit_api.py` | Use `DepositConfig.load()` in `__init__`; preserve existing parameter order |
 | `pyproject.toml` | Add `tomli; python_version < "3.11"` dependency |
 | `tests/test_config.py` | New — config resolution and edge case tests |
+| `CHANGELOG` | Document breaking change: `api_key=""` now raises; config layer governs unset args |
