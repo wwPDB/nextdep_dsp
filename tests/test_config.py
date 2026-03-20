@@ -1,4 +1,5 @@
 import pytest
+
 from nextdep_dsp.config import _parse_bool
 
 
