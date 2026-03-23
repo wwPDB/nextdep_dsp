@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, fields
 from pathlib import Path
 
@@ -18,6 +19,14 @@ def _parse_bool(value: str, var_name: str) -> bool:
     raise ValueError(
         f"{var_name}={value!r} is not a valid boolean. Use 'true', 'false', '1', or '0'."
     )
+
+
+_ENV_MAP = {
+    "ONEDEP_API_KEY": ("api_key", str),
+    "ONEDEP_HOSTNAME": ("hostname", str),
+    "ONEDEP_SSL_VERIFY": ("ssl_verify", lambda v: _parse_bool(v, "ONEDEP_SSL_VERIFY")),
+    "ONEDEP_REDIRECT": ("redirect", lambda v: _parse_bool(v, "ONEDEP_REDIRECT")),
+}
 
 
 @dataclass
@@ -39,17 +48,22 @@ class DepositConfig:
                 with open(config_file, "rb") as fp:
                     raw = tomllib.load(fp)
             except tomllib.TOMLDecodeError as exc:
-                # Only catch parse errors; PermissionError/OSError propagate as-is
                 raise ValueError(f"Failed to parse {config_file}: {exc}") from exc
             section = raw.get("default", {})
             for key, value in section.items():
                 if key in valid_fields:
-                    # Empty-string hostname in file is treated as absent
                     if key == "hostname" and value == "":
                         continue
                     merged[key] = value
 
-        # Layer 2: env vars — added in next task
+        # Layer 2: env vars
+        for env_var, (field_name, coerce) in _ENV_MAP.items():
+            raw_val = os.environ.get(env_var)
+            if raw_val is not None:
+                value = coerce(raw_val)
+                if field_name == "hostname" and value == "":
+                    continue
+                merged[field_name] = value
 
         # Layer 3: caller overrides (only known fields)
         for key, value in overrides.items():
