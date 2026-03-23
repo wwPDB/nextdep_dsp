@@ -4,29 +4,62 @@
 
 Prepares data to be deposited into OneDep system through the Deposition API.
 
-## Authentication
+## Configuration
 
-This package requires a OneDep API JWT to authenticate with the deposition API. The token can be provided in one of two ways:
+`DepositApi` resolves its settings from three sources in order of increasing priority:
 
-**File (default):** Store the JWT in `~/.onedepapi.jwt`. The file should contain only the token string (plain text, no quotes).
+1. `~/.config/nextdep/config.toml` (lowest — persistent dev defaults)
+2. Environment variables (override file — useful for CI/pipelines)
+3. Constructor arguments (highest — always win)
 
-```bash
-echo "your.jwt.token" > ~/.onedepapi.jwt
+### Config file
+
+Create `~/.config/nextdep/config.toml`:
+
+```toml
+[default]
+api_key = "your.jwt.token"
+hostname = "https://onedep-depui-test.wwpdb.org/deposition"
+ssl_verify = false
+redirect = true
 ```
 
-**Environment variable:** Set the `ONEDEP_API_KEY` environment variable.
+Once set, instantiate with no arguments:
+
+```python
+from nextdep_dsp.deposition.deposit_api import DepositApi
+
+api = DepositApi()  # reads from config file
+```
+
+### Environment variables
+
+| Variable | Setting | Type |
+|---|---|---|
+| `ONEDEP_API_KEY` | API JWT token | str |
+| `ONEDEP_HOSTNAME` | Deposition site URL | str |
+| `ONEDEP_SSL_VERIFY` | SSL verification | `true`/`false` |
+| `ONEDEP_REDIRECT` | Follow site redirects | `true`/`false` |
 
 ```bash
 export ONEDEP_API_KEY="your.jwt.token"
+export ONEDEP_HOSTNAME="https://onedep-depui-test.wwpdb.org/deposition"
+export ONEDEP_SSL_VERIFY="false"
 ```
 
-The package prefers the file by default. You can also use the helper to store the token programmatically:
+### Constructor arguments
+
+Constructor arguments always take precedence over all other sources:
 
 ```python
-from nextdep_dsp.authorization.token import set_api_key
-
-set_api_key("your.jwt.token")
+api = DepositApi(
+    hostname="https://onedep-depui-test.wwpdb.org/deposition",
+    api_key="your.jwt.token",
+    ssl_verify=False,
+)
 ```
+
+> **Note:** `DepositApi()` raises `DepositApiException` immediately at instantiation if no `api_key` is configured from any source.
 
 ## Features
 
