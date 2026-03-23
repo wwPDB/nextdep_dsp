@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument("--subtype", help="em experiment subtype")
     parser.add_argument("--filetype", action="append", help="file type", dest="filetypes")
     parser.add_argument("--datafile", help="optional data file")
-    parser.add_argument("--schema", default="schema/files.json", help="schema file")
+    parser.add_argument("--schema", default="schema/files.json", help="schema file", required=True)
     args = parser.parse_args()
 
     if not os.path.exists(args.schema):
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         if args.exptype or args.subtype or args.filetypes:
             sys.exit("error - datafile is mutually exclusive with all other options except schemafile")
         result = validate_required_files(args.datafile, args.schema)
-    else:
+    elif args.exptype and args.filetypes:
         files = []
         for arg in args.filetypes:
             files.append(arg)
@@ -60,6 +60,8 @@ if __name__ == "__main__":
         logger.info(f"generated data file: {datafile}")
         atexit.register(lambda: os.remove(datafile))
         result = validate_required_files(datafile, args.schema)
+    else:
+        sys.exit("error - require data file or experiment type and file type, use option -h for usage")
 
     if result:
         sys.exit("validated correctly")
