@@ -3,6 +3,7 @@ import mimetypes
 import os
 from typing import Union
 
+from nextdep_dsp.config import DepositConfig
 from nextdep_dsp.deposition.decorators import handle_invalid_deposit_site
 from nextdep_dsp.deposition.enum import Country, EMSubType, FileType
 from nextdep_dsp.deposition.exceptions import DepositApiException
@@ -24,10 +25,10 @@ class DepositApi:
     def __init__(
         self,
         hostname: str = None,
-        api_key: str = "",
+        api_key: str = None,
         ver: str = "v1",
-        ssl_verify: bool = True,
-        redirect: bool = True,
+        ssl_verify: bool = None,
+        redirect: bool = None,
         logger: logging.Logger = None,
     ):
         """
@@ -39,23 +40,41 @@ class DepositApi:
         :param redirect: Allow site redirects? True for production
         :param logger: Attach a logger
         """
-        self._hostname = hostname
-        self._api_key = api_key
+        overrides = {
+            k: v
+            for k, v in {
+                "hostname": hostname,
+                "api_key": api_key,
+                "ssl_verify": ssl_verify,
+                "redirect": redirect,
+            }.items()
+            if v is not None
+        }
+        config = DepositConfig.load(**overrides)
+
+        if not config.api_key:
+            raise DepositApiException(
+                "No API key configured. Set ONEDEP_API_KEY or add api_key to ~/.config/nextdep/config.toml",
+                401,
+            )
+
+        self._hostname = config.hostname
+        self._api_key = config.api_key
+        self._ssl_verify = config.ssl_verify
+        self._redirect = config.redirect
         self._version = ver
-        self._ssl_verify = ssl_verify
-        self._logger = logger
-        self._redirect = redirect
+        self._logger = logger or logging.getLogger(__name__)
 
-        if not hostname:
-            # Default hostname is wwPDB; may be redirected after deposition creation
-            hostname = "https://deposit.wwpdb.org/deposition"
+        self._connect()
 
-        self._connect(hostname)
-
-    def _connect(self, hostname: str = None) -> None:
-        if hostname:
-            self._hostname = hostname
-        self._rest_adapter = RestAdapter(self._hostname, self._api_key, self._version, self._ssl_verify, self._logger)
+    def _connect(self) -> None:
+        self._rest_adapter = RestAdapter(
+            hostname=self._hostname,
+            api_key=self._api_key,
+            ver=self._version,
+            ssl_verify=self._ssl_verify,
+            logger=self._logger
+        )
 
     @handle_invalid_deposit_site
     def create_deposition(

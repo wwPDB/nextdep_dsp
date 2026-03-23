@@ -31,7 +31,7 @@ class RestAdapter:
         self._logger = logger or logging.getLogger(__name__)
         self._version = ver
         self._hostname = hostname
-        self.url = "{}/api/{}/".format(hostname, ver)
+        self.url = f"{hostname}/api/{ver}/"
         self._api_key = api_key
         self._ssl_verify = ssl_verify
         self._timeout = timeout
@@ -57,7 +57,7 @@ class RestAdapter:
         :return: None
         """
         self._hostname = hostname
-        self.url = "{}/api/{}/".format(hostname, self._version)
+        self.url = f"{hostname}/api/{self._version}/"
 
     def _do(
         self,

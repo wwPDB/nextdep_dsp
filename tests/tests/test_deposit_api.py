@@ -24,15 +24,13 @@ class MyDepositApi(DepositApi):
 
     def __init__(
         self,
-        hostname: str = None,
-        api_key: str = "",
+        hostname: str = "https://example.com",
+        api_key: str = "test-api-key",  # non-empty dummy key
         ver: str = "v1",
         ssl_verify: bool = True,
         logger: logging.Logger = None,
     ):
-
         super(MyDepositApi, self).__init__(hostname, api_key, ver, ssl_verify, redirect=False, logger=logger)
-
         self.rest_adapter = self._rest_adapter
 
 
