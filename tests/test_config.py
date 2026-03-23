@@ -1,6 +1,8 @@
 import pytest
 
 from nextdep_dsp.config import DepositConfig, _parse_bool
+from nextdep_dsp.deposition.deposit_api import DepositApi
+from nextdep_dsp.deposition.exceptions import DepositApiException
 
 
 def test_parse_bool_true_values():
@@ -150,3 +152,43 @@ def test_constructor_overrides_env_var(monkeypatch, tmp_path):
     monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
     config = DepositConfig.load(api_key="explicit-key")
     assert config.api_key == "explicit-key"
+
+
+def test_deposit_api_raises_without_api_key(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
+    with pytest.raises(DepositApiException, match="No API key configured"):
+        DepositApi(hostname="https://example.com")
+
+
+def test_deposit_api_raises_with_empty_api_key(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
+    with pytest.raises(DepositApiException, match="No API key configured"):
+        DepositApi(hostname="https://example.com", api_key="")
+
+
+def test_deposit_api_raises_with_empty_env_api_key(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("ONEDEP_API_KEY", "")
+    with pytest.raises(DepositApiException, match="No API key configured"):
+        DepositApi(hostname="https://example.com")
+
+
+def test_deposit_api_ssl_verify_false_not_filtered(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    api = DepositApi(hostname="https://example.com", api_key="key", ssl_verify=False)
+    assert api._ssl_verify is False
+
+
+def test_deposit_api_uses_config_file(monkeypatch, tmp_path):
+    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        '[default]\napi_key = "file-key"\nhostname = "https://file.example.com"\n'
+    )
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
+    api = DepositApi()
+    assert api._api_key == "file-key"
+    assert api._hostname == "https://file.example.com"
