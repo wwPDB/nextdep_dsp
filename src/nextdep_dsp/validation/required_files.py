@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument("--subtype", help="em experiment subtype")
     parser.add_argument("--filetype", action="append", help="file type", dest="filetypes")
     parser.add_argument("--datafile", help="optional data file")
-    parser.add_argument("--schema", default="files.json", help="schema file")
+    parser.add_argument("--schema", default="schema/files.json", help="schema file")
     args = parser.parse_args()
 
     if not os.path.exists(args.schema):
