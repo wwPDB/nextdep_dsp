@@ -65,12 +65,16 @@ class DepositApi:
         self._version = ver
         self._logger = logger or logging.getLogger(__name__)
 
-        self._connect(config.hostname)
+        self._connect()
 
-    def _connect(self, hostname: str = None) -> None:
-        if hostname:
-            self._hostname = hostname
-        self._rest_adapter = RestAdapter(self._hostname, self._api_key, self._version, self._ssl_verify, self._logger)
+    def _connect(self) -> None:
+        self._rest_adapter = RestAdapter(
+            hostname=self._hostname,
+            api_key=self._api_key,
+            ver=self._version,
+            ssl_verify=self._ssl_verify,
+            logger=self._logger
+        )
 
     @handle_invalid_deposit_site
     def create_deposition(
