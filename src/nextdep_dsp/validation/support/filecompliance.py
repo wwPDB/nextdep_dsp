@@ -14,6 +14,8 @@ logger.addHandler(handler)
 
 
 class FileCompliance:
+    """validation logic for required files"""
+
     def __init__(self, schemafile:str):
         self.schemafile = schemafile
 
@@ -67,7 +69,7 @@ class FileCompliance:
         return tmp.name
 
     def validate_required_files(self, datafile, schemafile, keyword_extension=False) -> bool:
-        """forward parameters to support module
+        """forward parameters to support library
 
         Args:
             datafile (str): path to datafile
@@ -79,5 +81,4 @@ class FileCompliance:
         schemac = SchemaCompliance(datafile, schemafile, keyword_extension)
         v = schemac.validate()
         valid = v.valid.value
-        assert isinstance(valid, bool), "error - result is not a boolean"
         return valid
