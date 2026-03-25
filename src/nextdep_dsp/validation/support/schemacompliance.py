@@ -8,18 +8,18 @@ logger = logging.getLogger(__name__)
 class SchemaCompliance:
     """validation logic for schema compliance"""
 
-    specification = validators.Draft202012Validator
+    spec = validators.Draft202012Validator
 
     def __init__(self, datafile:str, schemafile:str, keyword_extension:bool=False):
         self.datafile = datafile
         self.schemafile = schemafile
         self.keyword_extension = keyword_extension
         if not self.keyword_extension:
-            self.validator = getattr(SchemaCompliance, "specification")
+            self.validator = getattr(SchemaCompliance, "spec")
         else:
             self.keywords = Keywords()
             self.keywords = Keywords.registry()
-            self.validator = validators.extend(getattr(SchemaCompliance, "specification"), self.keywords)
+            self.validator = validators.extend(getattr(SchemaCompliance, "spec"), self.keywords)
         self.resolvepath = Path(self.schemafile).resolve().as_uri()
 
     def validate(self) -> bool:
