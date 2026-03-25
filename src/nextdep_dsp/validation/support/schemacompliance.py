@@ -1,9 +1,15 @@
 import json
 from jsonschema import validate, RefResolver, validators, ValidationError
 from pathlib import Path
+from enum import Enum
 from nextdep_dsp.validation.support.keywords import Keywords
 import logging
 logger = logging.getLogger(__name__)
+
+class ValidationResult(Enum):
+    """validation result"""
+    THUMBS_UP = True
+    THUMBS_DOWN = False
 
 class SchemaCompliance:
     """validation logic for schema compliance"""
@@ -46,6 +52,6 @@ class SchemaCompliance:
         except (ValidationError, Exception) as e:
             msg = getattr(e, 'message', str(e))
             logger.error("an exception occurred: %s" % msg)
-            return False
+            return ValidationResult.THUMBS_DOWN.value
 
-        return True
+        return ValidationResult.THUMBS_UP.value
