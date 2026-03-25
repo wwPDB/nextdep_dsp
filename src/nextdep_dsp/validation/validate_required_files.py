@@ -2,7 +2,7 @@ import os
 import sys
 import tempfile
 import json
-from schemacompliance import SchemaCompliance
+from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
 import argparse
 import atexit
 import logging

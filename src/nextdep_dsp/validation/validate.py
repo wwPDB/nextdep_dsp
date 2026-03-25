@@ -1,6 +1,6 @@
 import os
 import sys
-from schemacompliance import SchemaCompliance
+from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
 import argparse
 import logging
 

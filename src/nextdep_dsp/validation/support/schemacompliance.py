@@ -1,7 +1,7 @@
 import json
 from jsonschema import validate, RefResolver, validators, ValidationError
 from pathlib import Path
-from keywords import Keywords
+from nextdep_dsp.validation.support.keywords import Keywords
 import logging
 logger = logging.getLogger(__name__)
 
