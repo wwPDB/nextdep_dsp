@@ -1,36 +1,47 @@
-import os
-import sys
+import typer
+from typing import Annotated
+from rich.console import Console
 from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
-import argparse
-import logging
+from nextdep_dsp.validation.support.filecompliance import FileCompliance
 
-logging.basicConfig(level=logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__file__)
-logger.addHandler(handler)
+app = typer.Typer()
+console = Console()
+
+
+@app.command()
+def filecheck(schemafile:str, exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:str="") -> None:
+    """required files command line entry point
+
+    Args:
+        schemafile (str): path to schema file
+        exptype (str): type of experiment
+        filetype (list): list of file types
+        subtype (str): subtype for em experiment
+    """
+    filec = FileCompliance(schemafile)
+    legit = filec.inspect_params(schemafile, exptype, filetype, subtype)
+    if legit:
+        console.print("validated correctly")
+    else:
+        console.print("validation failed")
+
+@app.command()
+def datafile(datafile:str, schemafile:str, keyword_extension:bool = False) -> None:
+    """generalized command line entry point
+
+    Args:
+        datafile (str): path to datafile
+        schemafile (str): path to schemafile
+    """
+    schemac = SchemaCompliance(datafile, schemafile, keyword_extension)
+    v = schemac.validate()
+    legit = v.valid.value
+    assert isinstance(legit, bool), "error - result is not a boolean"
+    if legit:
+        console.print("validated correctly")
+    else:
+        console.print("validation failed")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--datafile", required=True, help="json file")
-    parser.add_argument("--schema", required=True, help="schema file")
-    parser.add_argument("--keywords", action="store_true", help="enable keywords extension")
-    args = parser.parse_args()
-
-    datafile = args.datafile
-    schemafile = args.schema
-    keyword_extension = False
-    if args.keywords:
-        keyword_extension = bool(args.keywords)
-    if not os.path.exists(datafile):
-        sys.exit("error - file %s does not exist" % datafile)
-    if not os.path.exists(schemafile):
-        sys.exit("error - file %s does not exist" % schemafile)
-
-    schemac = SchemaCompliance(datafile, schemafile, keyword_extension)
-
-    if schemac.validate():
-        sys.exit("validated correctly")
-
-    sys.exit("validation failed")
+    app()

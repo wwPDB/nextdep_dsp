@@ -1,3 +1,4 @@
+import os
 import json
 from jsonschema import validate, RefResolver, validators, ValidationError
 from dataclasses import dataclass
@@ -31,6 +32,8 @@ class SchemaCompliance:
         self.datafile = datafile
         self.schemafile = schemafile
         self.keyword_extension = keyword_extension
+        if not os.path.exists(datafile) or not os.path.exists(schemafile):
+            raise FileNotFoundError("error - file not found")
         if not self.keyword_extension:
             self.validator = getattr(SchemaCompliance, "spec")
         else:
