@@ -1,19 +1,44 @@
+import typer
+from typing import Annotated
+from rich.console import Console
 import os
-import sys
-import tempfile
 import json
 from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
-import argparse
+import tempfile
 import atexit
-import logging
 
-logging.basicConfig(level=logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__file__)
-logger.addHandler(handler)
+app = typer.Typer()
+console = Console()
+
+@app.command()
+def params(schemafile:str, exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:str="") -> None:
+    """command line entry point"""
+    legit = inspect_params(schemafile, exptype, filetype, subtype)
+    if legit:
+        console.print("validated correctly")
+    else:
+        console.print("validation failed")
+
+@app.command()
+def files(datafile:str, schemafile:str) -> bool:
+    """command line entry point"""
+    legit = inspect_files(datafile, schemafile)
+    if legit:
+        console.print("validated correctly")
+    else:
+        console.print("validation failed")
+
+def inspect_params(schemafile:str, exptype:str, filetype:list[str], subtype:str="") -> bool:
+    """api entry point"""
+    datafile = generate_data_file(exptype, filetype, subtype)
+    return validate_required_files(datafile, schemafile)
+
+def inspect_files(datafile:str, schemafile:str) -> bool:
+    """api entry point"""
+    return validate_required_files(datafile, schemafile)
 
 def generate_data_file(exptype:str, filetypes:list, subtype:str="") -> str:
+    """generate file dynamically from parameters"""
     d = {
         "method": exptype,
         "files": filetypes
@@ -24,46 +49,14 @@ def generate_data_file(exptype:str, filetypes:list, subtype:str="") -> str:
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     tmp.write(jsonstring)
     tmp.close()
+    console.print(f"generated temporary file: {tmp.name}")
+    atexit.register(lambda: os.remove(tmp.name))
     return tmp.name
 
 def validate_required_files(datafile, schemafile, keyword_extension=False) -> bool:
+    """forward parameters to support library"""
     schemac = SchemaCompliance(datafile, schemafile, keyword_extension)
     return schemac.validate()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--exptype", help="experiment type")
-    parser.add_argument("--subtype", help="em experiment subtype")
-    parser.add_argument("--filetype", action="append", help="file type", dest="filetypes")
-    parser.add_argument("--datafile", help="optional data file")
-    parser.add_argument("--schema", default="schema/files.json", help="schema file", required=True)
-    args = parser.parse_args()
-
-    if not os.path.exists(args.schema):
-        sys.exit("error - schema file does not exist")
-
-    if args.datafile is not None:
-        if not os.path.isfile(args.datafile):
-            sys.exit("error - data file does not exist")
-        if args.exptype or args.subtype or args.filetypes:
-            sys.exit("error - datafile is mutually exclusive with all other options except schemafile")
-        result = validate_required_files(args.datafile, args.schema)
-    elif args.exptype and args.filetypes:
-        files = []
-        for arg in args.filetypes:
-            files.append(arg)
-
-        if not args.subtype:
-            args.subtype = ""
-
-        datafile = generate_data_file(args.exptype, files, args.subtype)
-        logger.info(f"generated data file: {datafile}")
-        atexit.register(lambda: os.remove(datafile))
-        result = validate_required_files(datafile, args.schema)
-    else:
-        sys.exit("error - require data file or experiment type and file type, use option -h for usage")
-
-    if result:
-        sys.exit("validated correctly")
-    else:
-        sys.exit("validation failed")
+    app()
