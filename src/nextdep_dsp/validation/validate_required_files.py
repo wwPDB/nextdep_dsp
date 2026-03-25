@@ -100,7 +100,10 @@ def validate_required_files(datafile, schemafile, keyword_extension=False) -> bo
         bool: True or False
     """
     schemac = SchemaCompliance(datafile, schemafile, keyword_extension)
-    return schemac.validate()
+    v = schemac.validate()
+    valid = v.valid.value
+    assert isinstance(valid, bool), "error - result is not a boolean"
+    return valid
 
 if __name__ == "__main__":
     app()

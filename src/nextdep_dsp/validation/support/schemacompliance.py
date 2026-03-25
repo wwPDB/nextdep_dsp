@@ -1,15 +1,26 @@
 import json
 from jsonschema import validate, RefResolver, validators, ValidationError
+from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum
 from nextdep_dsp.validation.support.keywords import Keywords
 import logging
 logger = logging.getLogger(__name__)
 
-class ValidationResult(Enum):
-    """validation result"""
-    THUMBS_UP = True
-    THUMBS_DOWN = False
+@dataclass
+class ValidationObject:
+    """validation object"""
+    method:str = None
+    filetypes:list[str] = None
+    schema:str = None
+    valid:'ValidationObject.ValidationResult' = None
+    subtype:str = ""
+    errors:list[str] = None
+    keyword_extension:bool = False
+    class ValidationResult(Enum):
+        """validation result"""
+        THUMBS_UP = True
+        THUMBS_DOWN = False
 
 class SchemaCompliance:
     """validation logic for schema compliance"""
@@ -28,30 +39,38 @@ class SchemaCompliance:
             self.validator = validators.extend(getattr(SchemaCompliance, "spec"), self.keywords)
         self.resolvepath = Path(self.schemafile).resolve().as_uri()
 
-    def validate(self) -> bool:
+    def validate(self) -> ValidationObject:
         """validate a json file with schema
         use RefResolver to resolve file paths to uri for online installations
         external schema file paths are resolved on-the-fly
         returns:
-            true or false
+            ValidationObject
         raises:
             ValidationError: if data file is not valid according to the schema
         """
+        v = ValidationObject()
         try:
 
             with open(self.datafile) as f:
                 data = json.load(f)
+                v.method = data.get("method")
+                v.subtype = data.get("subtype", "")
+                v.filetypes = data.get("files")
 
             with open(self.schemafile) as f:
                 schema = json.load(f)
+                v.schema = self.schemafile
 
             resolver = RefResolver(self.resolvepath, schema)
 
             self.validator(resolver=resolver, schema=schema).validate(data)
 
+            v.valid = v.ValidationResult.THUMBS_UP
+
         except (ValidationError, Exception) as e:
             msg = getattr(e, 'message', str(e))
             logger.error("an exception occurred: %s" % msg)
-            return ValidationResult.THUMBS_DOWN.value
+            v.valid = v.ValidationResult.THUMBS_DOWN
+            v.errors = [msg]
 
-        return ValidationResult.THUMBS_UP.value
+        return v
