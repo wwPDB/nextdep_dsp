@@ -30,7 +30,6 @@ class SchemaCompliance:
         self.datafile = datafile
         self.schemafile = schemafile
         self.keyword_extension = keyword_extension
-        print("schema file %s" % schemafile)
         if not schemafile:
             raise FileNotFoundError("error - schema file is required")
         elif not os.path.exists(schemafile):
