@@ -1,44 +1,51 @@
-import configparser
+from tomlkit import parse, dumps, TOMLDocument
 import os
 import re
 from pathlib import Path
 
 
-def load_token_config(configfile=None) -> configparser.ConfigParser:
-    """Load config parser with data from token.cfg.
+
+def load_token_config(configfile=None) -> TOMLDocument:
+    """Load token parser with data from token.toml.
 
     Args:
-        configfile (str): Path to the config file. If None, defaults to "token.cfg".
+        configfile (str): Path to the config file. If None, defaults to "token.toml".
 
     Returns:
-        ConfigParser: token parser instance
+        TOMLDocument: token parser instance
     """
     if configfile is None:
-        config_path = Path(__file__).with_name("token.cfg")
+        config_path = Path(__file__).with_name("token.toml")
     else:
         config_path = Path(configfile).expanduser().resolve()
 
-    config = configparser.ConfigParser()
-    config.read(config_path)
+    with open(config_path, "r", encoding="utf-8") as f:
+        config_data = parse(f.read())
 
-    return config
+    return config_data
 
 
 def get_api_key(configfile=None) -> str:
-    """Get API key from the file system or environment variable."""
+    """Get API key from the file system or environment variable.
+
+    Args:
+        configfile (str): Path to the config file. If None, defaults to "token.toml".
+    Returns:
+        str: API key to set.
+    """
     config = load_token_config(configfile)
 
     api_key = None
 
-    if config.getboolean("token", "prefer_file") == True:
+    if bool(config.get("token").get("prefer_file")) == True:
         file_path = os.path.expanduser(
-            config.get("token", "file_path", fallback="~/onedepapi.jwt")
+            config.get("token").get("file_path", "~/onedepapi.jwt")
         )
         if os.path.isfile(file_path):
-            with open(file_path, "r", encoding=config.get("token", "encoding")) as f:
+            with open(file_path, "r", encoding=config.get("token").get("encoding")) as f:
                 api_key = f.read().strip()
     else:
-        env_var_name = config.get("token", "env_var_name", fallback="ONEDEP_API_KEY")
+        env_var_name = config.get("token").get("env_var_name", "ONEDEP_API_KEY")
         api_key = os.environ.get(env_var_name)
 
     if not api_key:
@@ -59,21 +66,21 @@ def set_api_key(api_key: str, configfile=None) -> bool:
 
     config = load_token_config(configfile)
 
-    if len(api_key) < config.getint("validation", "min_length"):
+    if len(api_key) < int(config.get("validation").get("min_length")):
         raise ValueError("API key does not meet the minimum length requirement.")
 
-    pattern = config.get("validation", "regex")
+    pattern = config.get("validation").get("regex")
     if not re.match(r"%s" % pattern, api_key):
         raise ValueError("API key contains invalid characters.")
 
-    if config.getboolean("token", "prefer_file") == True:
+    if bool(config.get("token").get("prefer_file")) == True:
         file_path = os.path.expanduser(
-            config.get("token", "file_path", fallback="~/onedepapi.jwt")
+            config.get("token").get("file_path", "~/onedepapi.jwt")
         )
-        with open(file_path, "w", encoding=config.get("token", "encoding")) as f:
+        with open(file_path, "w", encoding=config.get("token").get("encoding")) as f:
             f.write(api_key)
     else:
-        env_var_name = config.get("token", "env_var_name", fallback="ONEDEP_API_KEY")
+        env_var_name = config.get("token").get("env_var_name", "ONEDEP_API_KEY")
         os.environ[env_var_name] = api_key
 
     return True
