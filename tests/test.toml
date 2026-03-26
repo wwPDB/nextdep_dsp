@@ -4,7 +4,7 @@ url = "https://deposit-1.wwpdb.org/deposition/"
 type = "jwt"
 
 [token]
-file_path = "/var/folders/gb/35qmx_6j45178slc91ygsw1w0000gq/T/tmpxjtw4yfh"
+file_path = "~/.config/nextdep/test.toml"
 env_var_name = "ONEDEP_API_KEY"
 encoding = "utf-8"
 prefer_file = true

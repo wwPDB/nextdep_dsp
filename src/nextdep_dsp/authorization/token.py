@@ -39,11 +39,12 @@ def get_api_key(configfile=None) -> str:
 
     if bool(config.get("token").get("prefer_file")) == True:
         file_path = os.path.expanduser(
-            config.get("token").get("file_path", "~/onedepapi.jwt")
+            config.get("token").get("file_path", "~/.config/nextdep/config.toml")
         )
         if os.path.isfile(file_path):
             with open(file_path, "r", encoding=config.get("token").get("encoding")) as f:
-                api_key = f.read().strip()
+                keyfile = parse(f.read())
+                api_key = keyfile.get("default").get("api_key")
     else:
         env_var_name = config.get("token").get("env_var_name", "ONEDEP_API_KEY")
         api_key = os.environ.get(env_var_name)
@@ -75,10 +76,26 @@ def set_api_key(api_key: str, configfile=None) -> bool:
 
     if bool(config.get("token").get("prefer_file")) == True:
         file_path = os.path.expanduser(
-            config.get("token").get("file_path", "~/onedepapi.jwt")
+            config.get("token").get("file_path", "~/.config/nextdep/config.toml")
         )
+        toml = None
+        if not os.path.exists(os.path.dirname(file_path)):
+            os.makedirs(os.path.dirname(file_path))
+        if not os.path.isfile(file_path):
+            content = f"""[default]
+            api_key = "{api_key}"
+            hostname = "https://onedep-depui-test.wwpdb.org/deposition"
+            ssl_verify = false
+            redirect = true
+            """
+            toml = parse(content)
+        else:
+            with open(file_path, "r", encoding="utf-8") as f:
+                toml = parse(f.read())
+                toml["default"]["api_key"] = api_key
         with open(file_path, "w", encoding=config.get("token").get("encoding")) as f:
-            f.write(api_key)
+            if toml:
+                f.write(dumps(toml))
     else:
         env_var_name = config.get("token").get("env_var_name", "ONEDEP_API_KEY")
         os.environ[env_var_name] = api_key

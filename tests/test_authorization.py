@@ -1,6 +1,6 @@
-from tomlkit import parse, dumps, TOMLDocument
+from tomlkit import TOMLDocument
 import re
-import tempfile
+import os
 from pathlib import Path
 from nextdep_dsp.authorization.token import load_token_config, set_api_key, get_api_key
 
@@ -42,10 +42,9 @@ def test_min_length_validation():
 
 
 def test_get_api_key():
+    assert set_api_key(TEST_TOKEN, TEST_CONFIG), "Token not set correctly"
+    assert get_api_key(TEST_CONFIG) == TEST_TOKEN, "Token not returned correctly"
     config = load_token_config(TEST_CONFIG)
-    with tempfile.NamedTemporaryFile(delete=True, mode="w+t") as tokenfile:
-        config["token"]["file_path"] = tokenfile.name
-        with open(TEST_CONFIG, "w") as f:
-            f.write(dumps(config))
-        assert set_api_key(TEST_TOKEN, TEST_CONFIG), "Token not set correctly"
-        assert get_api_key(TEST_CONFIG) == TEST_TOKEN, "Token not returned correctly"
+    filepath = os.path.expanduser(config.get("token").get("file_path"))
+    if os.path.exists(filepath):
+        os.unlink(filepath)
