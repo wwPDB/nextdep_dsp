@@ -22,7 +22,7 @@ class FileCompliance(SchemaCompliance):
         self.schemafile = schemafile
         self.keyword_extension = False
 
-    def inspect_params(self, schemafile:str, exptype:str, filetype:list[str], subtype:str="") -> bool:
+    def inspect_params(self, exptype:str, filetype:list[str], subtype:str="") -> bool:
         """entry point for file check with parameters
 
         Args:
@@ -37,7 +37,7 @@ class FileCompliance(SchemaCompliance):
         self.datafile = datafile
         return self.validate_required_files()
 
-    def inspect_files(self, datafile:str, schemafile:str) -> bool:
+    def inspect_files(self, datafile:str) -> bool:
         """entry point for file check with prebuilt json file
 
         Args:

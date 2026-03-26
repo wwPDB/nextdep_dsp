@@ -1,6 +1,6 @@
 import os
 import json
-from jsonschema import validate, RefResolver, validators, ValidationError
+from jsonschema import RefResolver, validators, ValidationError
 from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum

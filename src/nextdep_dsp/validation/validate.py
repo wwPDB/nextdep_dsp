@@ -19,7 +19,7 @@ def filecheck(schemafile:str, exptype:str, filetype:Annotated[list[str], typer.O
         subtype (str): subtype for em experiment
     """
     filec = FileCompliance(schemafile)
-    legit = filec.inspect_params(schemafile, exptype, filetype, subtype)
+    legit = filec.inspect_params(exptype, filetype, subtype)
     if legit:
         console.print("validated correctly")
     else:
@@ -36,7 +36,6 @@ def datafile(datafile:str, schemafile:str, keyword_extension:bool = False) -> No
     schemac = SchemaCompliance(datafile, schemafile, keyword_extension)
     v = schemac.validate()
     legit = v.valid.value
-    assert isinstance(legit, bool), "error - result is not a boolean"
     if legit:
         console.print("validated correctly")
     else:
