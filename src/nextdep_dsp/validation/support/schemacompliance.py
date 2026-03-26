@@ -11,13 +11,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ValidationObject:
     """validation object"""
-    method:str = None
-    filetypes:list[str] = None
     schema:str = None
-    valid:'ValidationObject.ValidationResult' = None
-    subtype:str = ""
-    errors:list[str] = None
+    datafile:str = None
     keyword_extension:bool = False
+    valid:'ValidationObject.ValidationResult' = None
+    errors:list[str] = None
     class ValidationResult(Enum):
         """validation result"""
         THUMBS_UP = True
@@ -32,8 +30,13 @@ class SchemaCompliance:
         self.datafile = datafile
         self.schemafile = schemafile
         self.keyword_extension = keyword_extension
-        if not os.path.exists(datafile) or not os.path.exists(schemafile):
-            raise FileNotFoundError("error - file not found")
+        print("schema file %s" % schemafile)
+        if not schemafile:
+            raise FileNotFoundError("error - schema file is required")
+        elif not os.path.exists(schemafile):
+            raise FileNotFoundError("error - schema file not found")
+        if datafile is not None and not os.path.exists(datafile):
+            raise FileNotFoundError("error - data file not found")
         if not self.keyword_extension:
             self.validator = getattr(SchemaCompliance, "spec")
         else:
@@ -51,29 +54,27 @@ class SchemaCompliance:
         raises:
             ValidationError: if data file is not valid according to the schema
         """
-        v = ValidationObject()
+        result = ValidationObject()
         try:
 
             with open(self.datafile) as f:
                 data = json.load(f)
-                v.method = data.get("method")
-                v.subtype = data.get("subtype", "")
-                v.filetypes = data.get("files")
+                result.datafile = self.datafile
 
             with open(self.schemafile) as f:
                 schema = json.load(f)
-                v.schema = self.schemafile
+                result.schema = self.schemafile
 
             resolver = RefResolver(self.resolvepath, schema)
 
             self.validator(resolver=resolver, schema=schema).validate(data)
 
-            v.valid = v.ValidationResult.THUMBS_UP
+            result.valid = result.ValidationResult.THUMBS_UP
 
         except (ValidationError, Exception) as e:
             msg = getattr(e, 'message', str(e))
             logger.error("an exception occurred: %s" % msg)
-            v.valid = v.ValidationResult.THUMBS_DOWN
-            v.errors = [msg]
+            result.valid = result.ValidationResult.THUMBS_DOWN
+            result.errors = [msg]
 
-        return v
+        return result

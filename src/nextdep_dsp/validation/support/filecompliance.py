@@ -13,11 +13,14 @@ logger = logging.getLogger(__file__)
 logger.addHandler(handler)
 
 
-class FileCompliance:
+class FileCompliance(SchemaCompliance):
     """validation logic for required files"""
 
     def __init__(self, schemafile:str):
+        super(FileCompliance, self).__init__(None, schemafile, False)
+        self.datafile = None
         self.schemafile = schemafile
+        self.keyword_extension = False
 
     def inspect_params(self, schemafile:str, exptype:str, filetype:list[str], subtype:str="") -> bool:
         """entry point for file check with parameters
@@ -31,7 +34,8 @@ class FileCompliance:
             bool: True or False
         """
         datafile = self.generate_data_file(exptype, filetype, subtype)
-        return self.validate_required_files(datafile, schemafile)
+        self.datafile = datafile
+        return self.validate_required_files()
 
     def inspect_files(self, datafile:str, schemafile:str) -> bool:
         """entry point for file check with prebuilt json file
@@ -42,7 +46,8 @@ class FileCompliance:
         Returns:
             bool: True or False
         """
-        return self.validate_required_files(datafile, schemafile)
+        self.datafile = datafile
+        return self.validate_required_files()
 
     def generate_data_file(self, exptype:str, filetypes:list, subtype:str="") -> str:
         """generate json file dynamically from parameters
@@ -68,7 +73,7 @@ class FileCompliance:
         atexit.register(lambda: os.remove(tmp.name))
         return tmp.name
 
-    def validate_required_files(self, datafile, schemafile, keyword_extension=False) -> bool:
+    def validate_required_files(self) -> bool:
         """forward parameters to support library
 
         Args:
@@ -78,7 +83,6 @@ class FileCompliance:
         Returns:
             bool: True or False
         """
-        schemac = SchemaCompliance(datafile, schemafile, keyword_extension)
-        v = schemac.validate()
+        v = self.validate()
         valid = v.valid.value
         return valid
