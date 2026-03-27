@@ -25,6 +25,7 @@ dependencies = [
   "rich",
   "requests>=2.32.5",
   "tomli; python_version < '3.11'",
+  "jsonschema"
 ]
 requires-python = ">= 3.9"
 
