@@ -1,0 +1,17 @@
+[authorization]
+source = "wwpdb"
+url = "https://deposit-1.wwpdb.org/deposition/"
+type = "jwt"
+
+[token]
+file_path = "~/.config/nextdep/config.toml"
+env_var_name = "ONEDEP_API_KEY"
+encoding = "utf-8"
+alg = "HS256"
+prefer_file = true
+
+[validation]
+min_length = 11
+regex = "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+header = "Authorization"
+scheme = "Bearer"
