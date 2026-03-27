@@ -7,6 +7,7 @@ type = "jwt"
 file_path = "~/.config/nextdep/config.toml"
 env_var_name = "ONEDEP_API_KEY"
 encoding = "utf-8"
+alg = "HS256"
 prefer_file = true
 
 [validation]

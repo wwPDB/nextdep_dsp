@@ -2,7 +2,11 @@ from tomlkit import parse, dumps, TOMLDocument
 import os
 import re
 from pathlib import Path
+import jwt
+import time
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 def load_token_config(configfile=None) -> TOMLDocument:
@@ -30,6 +34,7 @@ def get_api_key(configfile=None) -> str:
 
     Args:
         configfile (str): Path to the config file. If None, defaults to "token.toml".
+
     Returns:
         str: API key to set.
     """
@@ -62,17 +67,13 @@ def set_api_key(api_key: str, configfile=None) -> bool:
         api_key (str): API key to set.
 
     Raises:
-        ValueError: If api key does not pass validation.
+        ValueError: If api key does not pass simple validation.
     """
 
+    if not validate_api_key(api_key, configfile):
+        raise ValueError("API key is not valid.")
+
     config = load_token_config(configfile)
-
-    if len(api_key) < int(config.get("validation").get("min_length")):
-        raise ValueError("API key does not meet the minimum length requirement.")
-
-    pattern = config.get("validation").get("regex")
-    if not re.match(r"%s" % pattern, api_key):
-        raise ValueError("API key contains invalid characters.")
 
     if bool(config.get("token").get("prefer_file")) == True:
         file_path = os.path.expanduser(
@@ -99,5 +100,34 @@ def set_api_key(api_key: str, configfile=None) -> bool:
     else:
         env_var_name = config.get("token").get("env_var_name", "ONEDEP_API_KEY")
         os.environ[env_var_name] = api_key
+
+    return True
+
+def validate_api_key(api_key: str, configfile: str) -> bool:
+    """Validate API key.
+
+    Args:
+        api_key (str): API key to validate.
+        configfile (str): Path to the configuration file.
+
+    Returns:
+        bool: True if the API key is valid, False otherwise.
+    """
+    config = load_token_config(configfile)
+
+    if len(api_key) < int(config.get("validation").get("min_length")):
+        logger.error("API key does not meet the minimum length requirement.")
+        return False
+
+    pattern = config.get("validation").get("regex")
+    if not re.match(r"%s" % pattern, api_key):
+        logger.error("API key contains invalid characters.")
+        return False
+
+    alg = config.get("token").get("alg")
+    decoded_token = jwt.decode(api_key, algorithms=[alg], options={"verify_signature": False})
+    expiration_time = decoded_token.get("exp")
+    if expiration_time is None or expiration_time <= int(time.time()):
+        return False
 
     return True

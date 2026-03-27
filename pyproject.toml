@@ -23,7 +23,8 @@ license = {text = "MIT"}
 dependencies = [
   "typer",
   "rich",
-  "tomlkit"
+  "tomlkit",
+  "pyjwt"
 ]
 requires-python = ">= 3.12"
 

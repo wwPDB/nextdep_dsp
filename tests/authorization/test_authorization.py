@@ -2,10 +2,13 @@ from tomlkit import TOMLDocument
 import re
 import os
 from pathlib import Path
+import jwt
+import datetime
 from nextdep_dsp.authorization.token import load_token_config, set_api_key, get_api_key
 
 TEST_CONFIG = str(Path(__file__).with_name("test.toml"))
-TEST_TOKEN = "as5d6ak.asd786f57dsf.a6sd5fa868"
+alg = load_token_config(TEST_CONFIG).get("token").get("alg")
+TEST_TOKEN = jwt.encode({"exp": datetime.datetime.now() + datetime.timedelta(days=30)}, "secret", algorithm=alg)
 
 
 def test_cfg_structure():
