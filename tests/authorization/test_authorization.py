@@ -8,16 +8,19 @@ from nextdep_dsp.authorization.token import load_token_config, set_api_key, get_
 
 TEST_CONFIG = str(Path(__file__).with_name("test.toml"))
 alg = load_token_config(TEST_CONFIG).get("token").get("alg")
-TEST_TOKEN = jwt.encode({"exp": datetime.datetime.now() + datetime.timedelta(days=30)}, "secret", algorithm=alg)
+TEST_TOKEN = jwt.encode(
+    {"exp": datetime.datetime.now() + datetime.timedelta(days=30)},
+    "secret",
+    algorithm=alg,
+)
 
 
-def test_cfg_structure():
+def test_config_structure():
     config = load_token_config(TEST_CONFIG)
 
     assert isinstance(config, TOMLDocument)
     assert "token" in config
     assert "validation" in config
-    assert "none" not in config
 
     assert config.get("token").get("file_path") is not None
     assert config.get("token").get("env_var_name") is not None

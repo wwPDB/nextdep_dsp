@@ -47,7 +47,9 @@ def get_api_key(configfile=None) -> str:
             config.get("token").get("file_path", "~/.config/nextdep/config.toml")
         )
         if os.path.isfile(file_path):
-            with open(file_path, "r", encoding=config.get("token").get("encoding")) as f:
+            with open(
+                file_path, "r", encoding=config.get("token").get("encoding")
+            ) as f:
                 keyfile = parse(f.read())
                 api_key = keyfile.get("default").get("api_key")
     else:
@@ -103,6 +105,7 @@ def set_api_key(api_key: str, configfile=None) -> bool:
 
     return True
 
+
 def validate_api_key(api_key: str, configfile: str) -> bool:
     """Validate API key.
 
@@ -125,7 +128,9 @@ def validate_api_key(api_key: str, configfile: str) -> bool:
         return False
 
     alg = config.get("token").get("alg")
-    decoded_token = jwt.decode(api_key, algorithms=[alg], options={"verify_signature": False})
+    decoded_token = jwt.decode(
+        api_key, algorithms=[alg], options={"verify_signature": False}
+    )
     expiration_time = decoded_token.get("exp")
     if expiration_time is None or expiration_time <= int(time.time()):
         return False
