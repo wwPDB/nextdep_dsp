@@ -153,11 +153,22 @@
       "then": {
         "properties": {
           "files": {
-            "contains": {
-              "const": "vo-map"
-            },
-            "minContains": 1,
-            "maxContains": 1,
+            "allOf": [
+              {
+                "contains": {
+                  "const": "img-emdb"
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "const": "vo-map"
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            ],
             "items": {
               "enum": [
                 "co-pdb",
@@ -167,7 +178,10 @@
                 "add-map",
                 "mask-map",
                 "half-map",
-                "fsc-xml"
+                "fsc-xml",
+                "layer-lines",
+                "xs-cif",
+                "xs-mtz"
               ]
             }
           }
@@ -326,6 +340,69 @@
             },
             "minContains": 2,
             "maxContains": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "enum": [
+              "nmr",
+              "ssnmr"
+            ]
+          }
+        }
+      },
+      "then": {
+        "if": {
+          "not": {
+            "properties": {
+              "files": {
+                "contains": {
+                  "enum": [
+                    "nm-uni-nef",
+                    "nm-uni-str"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "files": {
+              "allOf": [
+                {
+                  "contains": {
+                    "const": "nm-shi"
+                  },
+                  "minContains": 1
+                },
+                {
+                  "contains": {
+                    "enum": [
+                      "nm-res-amb",
+                      "nm-res-bio",
+                      "nm-res-cha",
+                      "nm-res-cns",
+                      "nm-res-cya",
+                      "nm-res-dyn",
+                      "nm-res-dyn",
+                      "nm-res-dyn",
+                      "nm-res-gro",
+                      "nm-res-isd",
+                      "nm-res-ros",
+                      "nm-res-syb",
+                      "nm-res-xpl",
+                      "nm-res-oth"
+                    ]
+                  },
+                  "minContains": 1
+                }
+              ]
+            }
           }
         }
       }
