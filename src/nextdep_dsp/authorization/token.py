@@ -21,6 +21,7 @@ def load_token_config(configfile=None) -> TOMLDocument:
     if configfile is None:
         config_path = Path(__file__).with_name("token.toml")
     else:
+        # resolve path in platform-agnostic way
         config_path = Path(configfile).expanduser().resolve()
 
     with open(config_path, "r", encoding="utf-8") as f:
@@ -64,6 +65,7 @@ def get_api_key(configfile=None) -> str:
 
 def set_api_key(api_key: str, configfile=None) -> bool:
     """Set API key in the file system or environment variable.
+    Tomlkit reads and writes toml files in utf-8 encoding and supports python versions from 3.9.
 
     Args:
         api_key (str): API key to set.
