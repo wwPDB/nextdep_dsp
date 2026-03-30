@@ -1,5 +1,5 @@
 import typer
-from typing import Annotated
+from typing import Annotated, Optional
 from rich.console import Console
 from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
 from nextdep_dsp.validation.support.filecompliance import FileCompliance
@@ -9,7 +9,7 @@ console = Console()
 
 
 @app.command()
-def filecheck(exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:str="") -> None:
+def filecheck(exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:Optional[str]=None) -> None:
     """required files command line entry point
 
     Args:

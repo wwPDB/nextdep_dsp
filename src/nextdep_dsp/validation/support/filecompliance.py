@@ -4,7 +4,9 @@ import sys
 import tempfile
 import atexit
 import logging
+from typing import Optional
 from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
+from nextdep_dsp.deposition.enum import ExperimentType, EMSubType, FileType
 
 logging.basicConfig(level=logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
@@ -26,7 +28,7 @@ class FileCompliance(SchemaCompliance):
             raise FileNotFoundError("error - schema file not found")
         self.keyword_extension = False
 
-    def inspect_params(self, exptype:str, filetype:list[str], subtype:str="") -> bool:
+    def inspect_params(self, exptype:str, filetype:list[str], subtype:Optional[str]=None) -> bool:
         """entry point for file check with parameters
 
         Args:
@@ -53,7 +55,32 @@ class FileCompliance(SchemaCompliance):
         self.datafile = datafile
         return self.validate_required_files()
 
-    def generate_data_file(self, exptype:str, filetypes:list, subtype:str="") -> str:
+    def verify_params(self, exptype:str, filetypes:list[str], subtype:Optional[str]=None) -> bool:
+        """verify parameters for file check"""
+        explist = []
+        filelist = []
+        sublist = []
+        for e in ExperimentType:
+            explist.append(e.value)
+        for f in FileType:
+            filelist.append(f.value)
+        for s in EMSubType:
+            sublist.append(s.value)
+        if exptype not in explist:
+            logger.error("invalid experiment type")
+            return False
+        if not all(f in filelist for f in filetypes):
+            logger.error("invalid file type")
+            return False
+        if exptype == ExperimentType.EM.value and subtype is None:
+            logger.error("subtype is required for EM experiments")
+            return False
+        if exptype == ExperimentType.EM.value and not subtype in sublist:
+            logger.error("invalid subtype")
+            return False
+        return True
+
+    def generate_data_file(self, exptype:str, filetypes:list, subtype:Optional[str]=None) -> str:
         """generate json file dynamically from parameters
 
         Args:
@@ -63,6 +90,8 @@ class FileCompliance(SchemaCompliance):
         Returns:
             str: path to generated json file
         """
+        if not self.verify_params(exptype, filetypes, subtype):
+            raise ValueError("invalid parameters")
         d = {
             "method": exptype,
             "files": filetypes
