@@ -16,10 +16,14 @@ logger.addHandler(handler)
 class FileCompliance(SchemaCompliance):
     """validation logic for required files"""
 
-    def __init__(self, schemafile:str):
-        super(FileCompliance, self).__init__(None, schemafile, False)
+    schemafile:str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "files.json")
+
+    def __init__(self):
+        super(FileCompliance, self).__init__(None, getattr(FileCompliance, "schemafile"), False)
         self.datafile = None
-        self.schemafile = schemafile
+        self.schemafile = getattr(FileCompliance, "schemafile")
+        if not os.path.exists(self.schemafile):
+            raise FileNotFoundError("error - schema file not found")
         self.keyword_extension = False
 
     def inspect_params(self, exptype:str, filetype:list[str], subtype:str="") -> bool:

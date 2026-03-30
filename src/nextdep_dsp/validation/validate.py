@@ -9,16 +9,15 @@ console = Console()
 
 
 @app.command()
-def filecheck(schemafile:str, exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:str="") -> None:
+def filecheck(exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:str="") -> None:
     """required files command line entry point
 
     Args:
-        schemafile (str): path to schema file
         exptype (str): type of experiment
         filetype (list): list of file types
         subtype (str): subtype for em experiment
     """
-    filec = FileCompliance(schemafile)
+    filec = FileCompliance()
     legit = filec.inspect_params(exptype, filetype, subtype)
     if legit:
         console.print("validated correctly")
