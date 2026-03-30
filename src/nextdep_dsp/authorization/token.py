@@ -1,12 +1,14 @@
 from tomlkit import parse, dumps, TOMLDocument
+import typer
+from rich.console import Console
 import os
 import re
 from pathlib import Path
 import jwt
 import time
-import logging
 
-logger = logging.getLogger(__name__)
+app = typer.Typer()
+console = Console()
 
 
 def load_token_config(configfile=None) -> TOMLDocument:
@@ -63,9 +65,9 @@ def get_api_key(configfile=None) -> str:
     return api_key
 
 
-def set_api_key(api_key: str, configfile=None) -> bool:
+@app.command()
+def set_api_key(api_key: str, configfile: str = None) -> bool:
     """Set API key in the file system or environment variable.
-    Tomlkit reads and writes toml files in utf-8 encoding and supports python versions from 3.9.
 
     Args:
         api_key (str): API key to set.
@@ -108,7 +110,17 @@ def set_api_key(api_key: str, configfile=None) -> bool:
     return True
 
 
-def validate_api_key(api_key: str, configfile: str) -> bool:
+@app.command()
+def validate(api_key: str) -> None:
+    """Validate API key."""
+    valid = validate_api_key(api_key)
+    if valid:
+        console.print("API key is valid.")
+    else:
+        console.print("API key is not valid.")
+
+
+def validate_api_key(api_key: str, configfile: str = None) -> bool:
     """Validate API key.
 
     Args:
@@ -121,12 +133,12 @@ def validate_api_key(api_key: str, configfile: str) -> bool:
     config = load_token_config(configfile)
 
     if len(api_key) < int(config.get("validation").get("min_length")):
-        logger.error("API key does not meet the minimum length requirement.")
+        console.print("API key does not meet the minimum length requirement.")
         return False
 
     pattern = config.get("validation").get("regex")
     if not re.match(r"%s" % pattern, api_key):
-        logger.error("API key contains invalid characters.")
+        console.print("API key contains invalid characters.")
         return False
 
     alg = config.get("token").get("alg")
@@ -138,3 +150,7 @@ def validate_api_key(api_key: str, configfile: str) -> bool:
         return False
 
     return True
+
+
+if __name__ == "__main__":
+    app()
