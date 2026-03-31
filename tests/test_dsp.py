@@ -291,3 +291,41 @@ def test_get_experiment_file_types_returns_list(tmp_path):
     dep = _make_deposition(tmp_path)
     result = dep.get_experiment_file_types()
     assert isinstance(result, list)
+
+
+# ---------------------------------------------------------------------------
+# double-submit guard
+# ---------------------------------------------------------------------------
+
+def test_deposit_raises_if_already_deposited(tmp_path):
+    dep = _make_deposition(tmp_path)
+    with patch("nextdep_dsp.dsp.DepositApi") as mock_cls:
+        mock_api = MagicMock()
+        mock_cls.return_value = mock_api
+        mock_deposit = MagicMock()
+        mock_deposit.dep_id = "D_1"
+        mock_api.create_deposition.return_value = mock_deposit
+        dep.deposit()
+    with pytest.raises(ValueError, match="already been deposited"):
+        with patch("nextdep_dsp.dsp.DepositApi"):
+            dep.deposit()
+
+
+# ---------------------------------------------------------------------------
+# context manager
+# ---------------------------------------------------------------------------
+
+def test_deposition_context_manager(tmp_path):
+    with deposit_init(
+        email="user@example.com",
+        users=["0000-0001-2345-6789"],
+        country=Country.UK,
+        experiment_type=ExperimentType.XRAY,
+        _base_dir=tmp_path,
+    ) as dep:
+        assert isinstance(dep, Deposition)
+    # After exiting, the store should be closed; re-opening should work
+    from nextdep_dsp.session.store import SessionStore
+    with SessionStore(dep.session_id, base_dir=tmp_path) as store:
+        session = store.get_session()
+        assert session.session_id == dep.session_id

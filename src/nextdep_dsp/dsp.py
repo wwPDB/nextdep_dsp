@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from nextdep_dsp.checks.file_checks import (
     check_file_type as _check_file_type,
@@ -15,7 +15,7 @@ from nextdep_dsp.checks.file_checks import (
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.deposition.deposit_api import DepositApi
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
-from nextdep_dsp.deposition.models import DepositStatus, Experiment
+from nextdep_dsp.deposition.models import DepositError, DepositStatus, Experiment
 from nextdep_dsp.session.models import LocalFile, LocalSession
 from nextdep_dsp.session.store import SessionStore
 
@@ -82,7 +82,7 @@ class Deposition:
             api = DepositApi()
             api.get_all_depositions()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001 - intentionally broad: covers auth errors and config issues; will be narrowed later
             return False
 
     def add_file(self, file_path: str, file_type: FileType) -> str:
@@ -150,13 +150,19 @@ class Deposition:
             The remote deposition ID (e.g. "D_8000000001").
 
         Raises:
-            ValueError: If experiment_type has not been set.
+            ValueError: If experiment_type has not been set, or if this
+                session has already been deposited.
             DepositApiException: If any API call fails.
         """
         if self._session.experiment_type is None:
             raise ValueError(
                 "experiment_type must be set before calling deposit(). "
                 "Use set_experiment_type() or pass experiment_type to deposit_init()."
+            )
+        if self._session.remote_dep_id is not None:
+            raise ValueError(
+                f"This session has already been deposited (dep_id={self._session.remote_dep_id!r}). "
+                "Create a new session with deposit_init() to start a new deposition."
             )
         api = DepositApi()
         experiment = Experiment(exp_type=self._session.experiment_type.value)
@@ -167,14 +173,25 @@ class Deposition:
             experiments=[experiment],
         )
         dep_id = remote_deposit.dep_id
+        # Persist remote ID immediately so it survives any subsequent failure
+        self._store.set_remote_dep_id(dep_id)
+        self._session.remote_dep_id = dep_id
         for file in self._store.get_all_files():
             api.upload_file(dep_id, file.file_path, file.file_type)
         api.process(dep_id)
-        self._store.set_remote_dep_id(dep_id)
-        self._session.remote_dep_id = dep_id
         return dep_id
 
-    def get_status(self) -> DepositStatus:
+    def close(self) -> None:
+        """Close the underlying session store connection."""
+        self._store.close()
+
+    def __enter__(self) -> "Deposition":
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.close()
+
+    def get_status(self) -> Union[DepositStatus, DepositError]:
         """Return the current processing status of the remote deposition.
 
         Raises:
