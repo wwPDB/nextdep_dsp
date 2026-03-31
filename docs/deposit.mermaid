@@ -1,30 +1,62 @@
 sequenceDiagram
+    box Local machine
     participant A as Adapter
     participant D as DSP
+    end
     participant dAPI as DepAPI
 
-    Note over A,dAPI: Deposit Initialization
-    A->>D: deposit_init()
-    D->>dAPI: POST depositions/new
-    dAPI-->>D: deposition id
-    D-->>A: deposition id
+    Note over A,D: Deposit Initialization
+    A->>D: deposit_init() # this deposition is still local
+    D-->>A: Deposit object? LocalDeposit object?
+
+    A->>D: set_experiment_type(local_dep_id, experiment_type)
+    D-->>A: Deposit object? LocalDeposit object?
+
+    opt File type check (in the broadest sense. Not required in any particular order) 
+        Note over A,D: Perform checks on individual files
+
+        Note left of A: For mmCIF files only
+        A->>D: check_mmcif_file(fd) 
+        D-->>A: structure with errors and warnings
+
+        Note left of A: For mmCIF files only
+        A->>D: check_mmcif_category(fd, category) 
+        D-->>A: structure with errors and warnings
+
+        Note left of A: For mmCIF files only
+        A->>D: check_mmcif_field(fd, category, field) 
+        D-->>A: structure with errors and warnings
+
+        Note left of A: For other files
+        A->>D: check_file_type(fd, ft) 
+        D-->>A: structure with errors and warnings
+    end
 
     loop For each file
-        Note over A,dAPI: File Validation
-        A->>D: validate_file(fd) | validate() (all)
-        D-->>A: is valid?
-
-        Note over A,dAPI: File Upload
-        A->>D: add_file(fd, ft)
-    
-        D->>dAPI: POST depositions/{dep_id}/files/
-        dAPI-->>D: file id
+        Note over A,D: Adding files locally
+        A->>D: add_file(fd, ft) # file descriptor, # file type
         D-->>A: file id
     end
 
-    Note over A,dAPI: Deposit Processing
-    A->>D: deposit()
+    A->>D: check_required_files() # check if the deposition contains all required files
+    D-->>A: structure with errors and warnings
+
+    Note over A,dAPI: Create deposition on DepAPI
+    A->>D: deposit(local_dep_id)
+    D->>dAPI: POST depositions/new
+    dAPI-->>D: deposition id
+
+    Note over D,dAPI: File upload
+    loop For each file
+        D->>dAPI: POST depositions/{dep_id}/files/
+        dAPI-->>D: file id
+    end
+
+    Note over D,dAPI: Deposit Processing
     D->>dAPI: POST depositions/{dep_id}/process
-    dAPI-->>D: processing status
-    D-->>A: processing status
+    loop
+        D->>dAPI: GET depositions/{dep_id}/status
+        dAPI-->>D: processing status
+    end
+    D-->>A: deposition id
     Note right of dAPI: This does NOT return a pdb/emdb id yet.<br/>This is just to process files.<br/>To get a pdb/emdb id, the user needs to:<br/>1. Log in to DepUI<br/>2. Fill out the rest of metadata<br/>3. Download validation report<br/>4. Check ligands, sequence, assembly<br/>5. Submit
