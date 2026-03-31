@@ -2,6 +2,8 @@
 
 from nextdep_dsp.checks.report import CheckIssue, CheckReport, CheckSeverity, CifLocation
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
+from nextdep_dsp.deposition.exceptions import DepositApiException
+from nextdep_dsp.deposition.models import DepositError, DepositStatus
 from nextdep_dsp.dsp import Deposition, deposit_init
 
 __all__ = [
@@ -14,4 +16,7 @@ __all__ = [
     "Country",
     "ExperimentType",
     "FileType",
+    "DepositStatus",
+    "DepositError",
+    "DepositApiException",
 ]
