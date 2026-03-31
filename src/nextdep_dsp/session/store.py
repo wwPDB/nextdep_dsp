@@ -9,7 +9,7 @@ from typing import Optional
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
 from nextdep_dsp.session.models import LocalFile, LocalSession
 
-_SCHEMA = """
+_CREATE_SESSIONS = """
 CREATE TABLE IF NOT EXISTS sessions (
     session_id    TEXT PRIMARY KEY,
     email         TEXT NOT NULL,
@@ -19,15 +19,17 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at    TEXT NOT NULL,
     db_path       TEXT NOT NULL,
     remote_dep_id TEXT
-);
+)
+"""
 
+_CREATE_FILES = """
 CREATE TABLE IF NOT EXISTS files (
     file_id    TEXT PRIMARY KEY,
     session_id TEXT NOT NULL,
     file_path  TEXT NOT NULL,
     file_type  TEXT NOT NULL,
     FOREIGN KEY (session_id) REFERENCES sessions(session_id)
-);
+)
 """
 
 
@@ -40,8 +42,8 @@ class SessionStore:
         self._conn = sqlite3.connect(str(self._db_path))
         self._conn.row_factory = sqlite3.Row
         with self._conn:
-            self._conn.execute(_SCHEMA.split(";")[0].strip())
-            self._conn.execute(_SCHEMA.split(";")[1].strip())
+            self._conn.execute(_CREATE_SESSIONS)
+            self._conn.execute(_CREATE_FILES)
 
     def __enter__(self) -> "SessionStore":
         return self
