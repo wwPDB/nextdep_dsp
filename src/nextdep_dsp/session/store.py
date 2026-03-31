@@ -4,7 +4,6 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
 from nextdep_dsp.session.models import LocalFile, LocalSession
@@ -34,7 +33,7 @@ CREATE TABLE IF NOT EXISTS files (
 
 
 class SessionStore:
-    def __init__(self, session_id: str, base_dir: Optional[Path] = None) -> None:
+    def __init__(self, session_id: str, base_dir: Path | None = None) -> None:
         _base = base_dir or (Path.home() / ".nextdep" / "sessions")
         self._session_id = session_id
         self._db_path = _base / session_id / "session.db"
@@ -111,7 +110,9 @@ class SessionStore:
 
     def remove_file(self, file_id: str) -> None:
         with self._conn:
-            self._conn.execute("DELETE FROM files WHERE file_id = ?", (file_id,))
+            cursor = self._conn.execute("DELETE FROM files WHERE file_id = ?", (file_id,))
+        if cursor.rowcount == 0:
+            raise KeyError(f"File {file_id!r} not found in session")
 
     def get_file(self, file_id: str) -> LocalFile:
         row = self._conn.execute(
@@ -127,7 +128,9 @@ class SessionStore:
         )
 
     def get_all_files(self) -> list[LocalFile]:
-        rows = self._conn.execute("SELECT * FROM files").fetchall()
+        rows = self._conn.execute(
+            "SELECT * FROM files WHERE session_id = ?", (self._session_id,)
+        ).fetchall()
         return [
             LocalFile(
                 file_id=row["file_id"],

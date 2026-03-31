@@ -3,7 +3,6 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
 
 from nextdep_dsp.checks.file_checks import (
     check_file_type as _check_file_type,
@@ -24,8 +23,8 @@ def deposit_init(
     email: str,
     users: list[str],
     country: Country,
-    experiment_type: Optional[ExperimentType] = None,
-    _base_dir: Optional[Path] = None,
+    experiment_type: ExperimentType | None = None,
+    _base_dir: Path | None = None,
 ) -> "Deposition":
     """Create a new local deposition session.
 
@@ -67,7 +66,7 @@ class Deposition:
         return self._session.session_id
 
     @property
-    def remote_dep_id(self) -> Optional[str]:
+    def remote_dep_id(self) -> str | None:
         """Remote deposition ID, populated after deposit() is called."""
         return self._session.remote_dep_id
 
@@ -191,7 +190,7 @@ class Deposition:
     def __exit__(self, *args: object) -> None:
         self.close()
 
-    def get_status(self) -> Union[DepositStatus, DepositError]:
+    def get_status(self) -> DepositStatus | DepositError:
         """Return the current processing status of the remote deposition.
 
         Raises:

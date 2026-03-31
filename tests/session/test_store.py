@@ -157,6 +157,15 @@ def test_context_manager_closes_connection(tmp_path):
         assert result.session_id == "sess-cm"
 
 
+def test_remove_file_raises_for_unknown_id(tmp_path):
+    with SessionStore("sess-1", base_dir=tmp_path) as store:
+        session = _make_session()
+        session.db_path = str(store.db_path)
+        store.create_session(session)
+        with pytest.raises(KeyError):
+            store.remove_file("nonexistent-id")
+
+
 def test_get_session_raises_key_error_on_empty_db(tmp_path):
     store = SessionStore("sess-empty", base_dir=tmp_path)
     with pytest.raises(KeyError):
