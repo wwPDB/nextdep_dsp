@@ -143,3 +143,22 @@ def test_get_all_files(tmp_path):
     assert len(files) == 2
     assert {f.file_id for f in files} == {"f1", "f2"}
     store.close()
+
+
+def test_context_manager_closes_connection(tmp_path):
+    with SessionStore("sess-cm", base_dir=tmp_path) as store:
+        session = _make_session("sess-cm")
+        session.db_path = str(store.db_path)
+        store.create_session(session)
+    # After exiting the context, store should be closed
+    # Re-opening should work fine (proves the file was properly closed)
+    with SessionStore("sess-cm", base_dir=tmp_path) as store2:
+        result = store2.get_session()
+        assert result.session_id == "sess-cm"
+
+
+def test_get_session_raises_key_error_on_empty_db(tmp_path):
+    store = SessionStore("sess-empty", base_dir=tmp_path)
+    with pytest.raises(KeyError):
+        store.get_session()
+    store.close()

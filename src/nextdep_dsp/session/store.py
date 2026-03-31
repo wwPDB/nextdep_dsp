@@ -4,6 +4,7 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
 from nextdep_dsp.session.models import LocalFile, LocalSession
@@ -31,14 +32,22 @@ CREATE TABLE IF NOT EXISTS files (
 
 
 class SessionStore:
-    def __init__(self, session_id: str, base_dir: Path | None = None) -> None:
+    def __init__(self, session_id: str, base_dir: Optional[Path] = None) -> None:
         _base = base_dir or (Path.home() / ".nextdep" / "sessions")
+        self._session_id = session_id
         self._db_path = _base / session_id / "session.db"
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self._db_path))
         self._conn.row_factory = sqlite3.Row
-        self._conn.executescript(_SCHEMA)
-        self._conn.commit()
+        with self._conn:
+            self._conn.execute(_SCHEMA.split(";")[0].strip())
+            self._conn.execute(_SCHEMA.split(";")[1].strip())
+
+    def __enter__(self) -> "SessionStore":
+        return self
+
+    def __exit__(self, *args) -> None:
+        self.close()
 
     @property
     def db_path(self) -> Path:
@@ -61,7 +70,11 @@ class SessionStore:
             )
 
     def get_session(self) -> LocalSession:
-        row = self._conn.execute("SELECT * FROM sessions").fetchone()
+        row = self._conn.execute(
+            "SELECT * FROM sessions WHERE session_id = ?", (self._session_id,)
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"No session found for session_id {self._session_id!r}")
         return LocalSession(
             session_id=row["session_id"],
             email=row["email"],
@@ -69,22 +82,22 @@ class SessionStore:
             country=Country(row["country"]),
             experiment_type=ExperimentType(row["experiment_type"]) if row["experiment_type"] else None,
             created_at=datetime.fromisoformat(row["created_at"]),
-            db_path=row["db_path"],
+            db_path=str(self._db_path),
             remote_dep_id=row["remote_dep_id"],
         )
 
     def update_experiment_type(self, experiment_type: ExperimentType) -> None:
         with self._conn:
             self._conn.execute(
-                "UPDATE sessions SET experiment_type = ?",
-                (experiment_type.value,),
+                "UPDATE sessions SET experiment_type = ? WHERE session_id = ?",
+                (experiment_type.value, self._session_id),
             )
 
     def set_remote_dep_id(self, dep_id: str) -> None:
         with self._conn:
             self._conn.execute(
-                "UPDATE sessions SET remote_dep_id = ?",
-                (dep_id,),
+                "UPDATE sessions SET remote_dep_id = ? WHERE session_id = ?",
+                (dep_id, self._session_id),
             )
 
     def add_file(self, file: LocalFile) -> None:
