@@ -33,18 +33,21 @@ def test_check_mmcif_file_ok_stub():
 def test_check_mmcif_category_returns_check_report():
     result = check_mmcif_category(_make_file(), "atom_site")
     assert isinstance(result, CheckReport)
+    assert result.source == "f1"
     assert result.ok is True
 
 
 def test_check_mmcif_field_returns_check_report():
     result = check_mmcif_field(_make_file(), "atom_site", "Cartn_x")
     assert isinstance(result, CheckReport)
+    assert result.source == "f1"
     assert result.ok is True
 
 
 def test_check_file_type_returns_check_report():
     result = check_file_type(_make_file(), FileType.MMCIF_COORD)
     assert isinstance(result, CheckReport)
+    assert result.source == "f1"
     assert result.ok is True
 
 
@@ -53,6 +56,7 @@ def test_check_required_files_returns_check_report():
     result = check_required_files(files, ExperimentType.XRAY)
     assert isinstance(result, CheckReport)
     assert result.source == "session"
+    assert result.ok is True
 
 
 def test_check_required_files_ok_with_no_experiment_type():
