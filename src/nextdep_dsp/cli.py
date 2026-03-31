@@ -21,10 +21,28 @@ def verify_exp_type(exptype:str) -> bool:
         raise ValueError("Invalid experiment type, options are: " + ", ".join([exptype for exptype in exptypes]))
     return True
 
+def verify_email(email:str) -> bool:
+    """Verify email format"""
+    if not re.match(r"^[\w.-]+@[\w.-]+\.\w+$", email):
+        raise ValueError(f"Invalid email format: {email}")
+    return True
+
 def verify_orcid(orcid:str) -> bool:
     """Verify ORCID format"""
     if not re.match(r"^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$", orcid):
         raise ValueError(f"Invalid ORCID format: {orcid}")
+    return True
+
+def verify_emdb_id(emdb_id:str) -> bool:
+    """Verify EMDB ID format"""
+    if not re.match(r"^EMD-\d{4,6}$", emdb_id):
+        raise ValueError(f"Invalid EMDB ID format: {emdb_id}")
+    return True
+
+def verify_bmrb_id(bmrb_id:str) -> bool:
+    """Verify BMRB ID format"""
+    if not re.match(r"^\d+$", bmrb_id):
+        raise ValueError(f"Invalid BMRB ID format: {bmrb_id}")
     return True
 
 def get_country_enum(country_string: str):
@@ -52,6 +70,9 @@ def get_file_type_enum(file_type_string: str):
 def create(exptype:str, email:str, user:Annotated[list[str], typer.Option()], country:str, subtype:Optional[str]=None, coords:Optional[bool]=None, related:Optional[str]=None, password:Optional[str]=None, sf_only:Optional[bool]=None):
     api = DepositApi()
     verify_exp_type(exptype)
+    verify_email(email)
+    if len(user) == 0:
+        raise ValueError("At least one user is required")
     for u in user:
         verify_orcid(u)
     countryEnum = get_country_enum(country)
@@ -59,21 +80,33 @@ def create(exptype:str, email:str, user:Annotated[list[str], typer.Option()], co
         if subtype is None:
             raise ValueError("subtype is required for EM deposition")
         if coords is None:
-            raise ValueError("coordinates (true/false) is required for EM deposition")
+            raise ValueError("coords/no-coords is required for EM deposition")
         subtypeEnum = get_subtype_enum(subtype)
     elif exptype == "ec":
         if sf_only is None:
-            raise ValueError("sf_only (true/false) is required for EC deposition")
+            raise ValueError("sf-only/no-sf-only is required for EC deposition")
+    if coords is not None and coords == False and exptype in ["xray", "fiber", "neutron"]:
+        raise ValueError("coordinates are required for xray, fiber, and neutron diffraction")
+    if sf_only is not None and exptype != "ec":
+        raise ValueError("sf-only is only valid for EC deposition")
     deposition = None
     if exptype == "xray":
         deposition = api.create_xray_deposition(email=email, users=user, country=countryEnum, password=password)
     elif exptype == "em":
+        if related is not None:
+            verify_emdb_id(related)
         deposition = api.create_em_deposition(email=email, users=user, country=countryEnum, subtype=subtypeEnum, coordinates=coords, related_emdb=related, password=password)
     elif exptype == "nmr":
+        if related is not None:
+            verify_bmrb_id(related)
         deposition = api.create_nmr_deposition(email=email, users=user, country=countryEnum, password=password, coordinates=coords, related_bmrb=related)
     elif exptype == "ssnmr":
+        if related is not None:
+            verify_bmrb_id(related)
         deposition = api.create_ssnmr_deposition(email=email, users=user, country=countryEnum, password=password, coordinates=coords, related_bmrb=related)
     elif exptype == "ec":
+        if related is not None:
+            verify_emdb_id(related)
         deposition = api.create_ec_deposition(email=email, users=user, country=countryEnum, password=password, coordinates=coords, sf_only=sf_only, related_emdb=related)
     elif exptype == "fiber":
         deposition = api.create_fiber_deposition(email=email, users=user, country=countryEnum, password=password)
