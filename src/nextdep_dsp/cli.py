@@ -5,6 +5,7 @@ from typing import Annotated, Optional
 import typer
 from rich.console import Console
 import re
+import functools
 from nextdep_dsp.deposition.deposit_api import DepositApi
 from nextdep_dsp.deposition.enum import EMSubType, ExperimentType, Country, FileType
 
@@ -12,54 +13,57 @@ app = typer.Typer()
 console = Console()
 
 
-def verify_parameters(
-    exptype: str,
-    email: str,
-    user: list[str],
-    country: str,
-    subtype: Optional[str] = None,
-    coords: Optional[bool] = None,
-    related_id: Optional[str] = None,
-    password: Optional[str] = None,
-    sf_only: Optional[bool] = None,
-) -> bool:
-    """Verify parameters for deposition creation"""
-    verify_exp_type(exptype)
-    verify_email(email)
-    if len(user) == 0:
-        raise ValueError("At least one user is required")
-    for u in user:
-        verify_orcid(u)
-    verify_country(country)
-    if exptype == "em":
-        if subtype is None:
-            raise ValueError("subtype is required for EM deposition")
-        if coords is None:
-            raise ValueError("coords/no-coords is required for EM deposition")
-        verify_subtype(subtype)
-    elif exptype == "ec":
-        if sf_only is None:
-            raise ValueError("sf-only/no-sf-only is required for EC deposition")
-    if (
-        coords is not None
-        and coords == False
-        and exptype in ["xray", "fiber", "neutron"]
-    ):
-        raise ValueError(
-            "coordinates are required for xray, fiber, and neutron diffraction"
-        )
-    if sf_only is not None and exptype != "ec":
-        raise ValueError("sf-only is only valid for EC deposition")
-    if related_id is not None:
-        if exptype in ["em", "ec"]:
-            verify_emdb_id(related_id)
-        elif exptype in ["nmr", "ssnmr"]:
-            verify_bmrb_id(related_id)
-        else:
+def filter(func) -> bool:
+    """Filter inputs for deposition creation"""
+    @functools.wraps(func)
+    def preprocess(*args, **kwargs):
+        exptype:str = kwargs.get("exptype")
+        email:str = kwargs.get("email")
+        user:list[str] = kwargs.get("user")
+        country:str = kwargs.get("country")
+        subtype:Optional[str] = kwargs.get("subtype")
+        coords:Optional[bool] = kwargs.get("coords")
+        related_id:Optional[str] = kwargs.get("related_id")
+        password:Optional[str] = kwargs.get("password")
+        sf_only:Optional[bool] = kwargs.get("sf_only")
+
+        v = verify_exp_type(exptype)
+        v &= verify_email(email)
+        if len(user) == 0:
+            raise ValueError("At least one user is required")
+        for u in user:
+            v &= verify_orcid(u)
+        v &= verify_country(country)
+        if exptype == "em":
+            if subtype is None:
+                raise ValueError("subtype is required for EM deposition")
+            if coords is None:
+                raise ValueError("coords/no-coords is required for EM deposition")
+            v &= verify_subtype(subtype)
+        elif exptype == "ec":
+            if sf_only is None:
+                raise ValueError("sf-only/no-sf-only is required for EC deposition")
+        if (
+            coords is not None
+            and coords == False
+            and exptype in ["xray", "fiber", "neutron"]
+        ):
             raise ValueError(
-                "related-id is only valid for EM, EC, NMR, or SS-NMR deposition"
+                "coordinates are required for xray, fiber, and neutron diffraction"
             )
-    return True
+        if sf_only is not None and exptype != "ec":
+            raise ValueError("sf-only is only valid for EC deposition")
+        if related_id is not None:
+            if exptype in ["em", "ec"]:
+                v &= verify_emdb_id(related_id)
+            elif exptype in ["nmr", "ssnmr"]:
+                v &= verify_bmrb_id(related_id)
+            else:
+                raise ValueError(
+                    "related-id is only valid for EM, EC, NMR, or SS-NMR deposition"
+                )
+        v ^ func(*args, **kwargs)
+    return preprocess
 
 
 def verify_exp_type(exptype: str) -> bool:
@@ -163,6 +167,7 @@ def get_file_type_enum(file_type_string: str) -> str:
 
 
 @app.command()
+@filter
 def create(
     exptype: str,
     email: str,
@@ -173,11 +178,7 @@ def create(
     related_id: Optional[str] = None,
     password: Optional[str] = None,
     sf_only: Optional[bool] = None,
-):
-    if not verify_parameters(
-        exptype, email, user, country, subtype, coords, related_id, password, sf_only
-    ):
-        raise ValueError("Invalid parameters")
+) -> bool:
     api = DepositApi()
     countryEnum = get_country_enum(country)
     if exptype == "xray":
@@ -235,6 +236,7 @@ def create(
         raise ValueError("Failed to create deposition")
     dep_id = deposition.dep_id
     console.print(deposition)
+    return True
 
 
 @app.command()
