@@ -31,6 +31,10 @@ class CheckIssue:
     expected: Any = None
     actual: Any = None
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.severity, CheckSeverity):
+            object.__setattr__(self, "severity", CheckSeverity(self.severity))
+
 
 @dataclass
 class CheckReport:

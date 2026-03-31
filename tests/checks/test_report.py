@@ -76,3 +76,10 @@ def test_check_issue_with_location():
     assert issue.location.category == "atom_site"
     assert issue.expected == 1.0
     assert issue.actual == "bad"
+
+
+def test_check_issue_coerces_raw_string_severity():
+    issue = CheckIssue(severity="error", code="X", message="msg")
+    assert issue.severity is CheckSeverity.ERROR
+    report = CheckReport(source="s", issues=[issue])
+    assert report.ok is False
