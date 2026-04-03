@@ -325,5 +325,16 @@ def process(dep_id: str, voxels_json: Optional[str] = None, copy_dep_id: Optiona
         return False
 
 
+@app.command()
+def get_deposition(dep_id: str) -> bool:
+    """Get deposition from deposition id"""
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    api = DepositApi()
+    deposition = api.get_deposition(dep_id)
+    console.print(deposition)
+    return True
+
+
 if __name__ == "__main__":
     app()
