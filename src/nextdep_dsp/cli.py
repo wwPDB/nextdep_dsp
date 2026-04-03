@@ -46,14 +46,8 @@ def sigma(func):
         elif exptype == "ec":
             if sf_only is None:
                 raise ValueError("sf-only/no-sf-only is required for EC deposition")
-        if (
-            coords is not None
-            and coords == False
-            and exptype in ["xray", "fiber", "neutron"]
-        ):
-            raise ValueError(
-                "coordinates are required for xray, fiber, and neutron diffraction"
-            )
+        if coords is not None and coords == False and exptype in ["xray", "fiber", "neutron"]:
+            raise ValueError("coordinates are required for xray, fiber, and neutron diffraction")
         if sf_only is not None and exptype != "ec":
             raise ValueError("sf-only is only valid for EC deposition")
         if related_id is not None:
@@ -62,9 +56,7 @@ def sigma(func):
             elif exptype in ["nmr", "ssnmr"]:
                 v &= verify_bmrb_id(related_id)
             else:
-                raise ValueError(
-                    "related-id is only valid for EM, EC, NMR, or SS-NMR deposition"
-                )
+                raise ValueError("related-id is only valid for EM, EC, NMR, or SS-NMR deposition")
         v ^ func(*args, **kwargs)
 
     return s
@@ -76,10 +68,7 @@ def verify_exp_type(exptype: str) -> bool:
     for e in ExperimentType:
         exptypes.append(e.value)
     if exptype not in exptypes:
-        raise ValueError(
-            "Invalid experiment type, options are: "
-            + ", ".join([exptype for exptype in exptypes])
-        )
+        raise ValueError("Invalid experiment type, options are: " + ", ".join([exptype for exptype in exptypes]))
     return True
 
 
@@ -117,10 +106,7 @@ def verify_country(country: str) -> bool:
     for c in Country:
         countries.append(c.value)
     if country not in countries:
-        raise ValueError(
-            "Invalid country, options are: "
-            + ", ".join([country for country in countries])
-        )
+        raise ValueError("Invalid country, options are: " + ", ".join([country for country in countries]))
     return True
 
 
@@ -130,10 +116,7 @@ def verify_subtype(subtype: str) -> bool:
     for s in EMSubType:
         subtypes.append(s.value)
     if subtype not in subtypes:
-        raise ValueError(
-            "Invalid subtype, options are: "
-            + ", ".join([subtype for subtype in subtypes])
-        )
+        raise ValueError("Invalid subtype, options are: " + ", ".join([subtype for subtype in subtypes]))
     return True
 
 
@@ -150,10 +133,7 @@ def get_country_enum(country_string: str) -> str:
     for country in Country:
         if country.value == country_string:
             return country
-    raise ValueError(
-        "Invalid country, options are: "
-        + ", ".join([country.value for country in Country])
-    )
+    raise ValueError("Invalid country, options are: " + ", ".join([country.value for country in Country]))
 
 
 def get_subtype_enum(subtype_string: str) -> str:
@@ -161,10 +141,7 @@ def get_subtype_enum(subtype_string: str) -> str:
     for subtype in EMSubType:
         if subtype.value == subtype_string:
             return subtype
-    raise ValueError(
-        "Invalid subtype, options are: "
-        + ", ".join([subtype.value for subtype in EMSubType])
-    )
+    raise ValueError("Invalid subtype, options are: " + ", ".join([subtype.value for subtype in EMSubType]))
 
 
 def get_file_type_enum(file_type_string: str) -> str:
@@ -172,10 +149,7 @@ def get_file_type_enum(file_type_string: str) -> str:
     for file_type in FileType:
         if file_type.value == file_type_string:
             return file_type
-    raise ValueError(
-        "Invalid file type, options are: "
-        + ", ".join([file_type.value for file_type in FileType])
-    )
+    raise ValueError("Invalid file type, options are: " + ", ".join([file_type.value for file_type in FileType]))
 
 
 @app.command()
@@ -195,9 +169,7 @@ def create(
     api = DepositApi()
     countryEnum = get_country_enum(country)
     if exptype == "xray":
-        deposition = api.create_xray_deposition(
-            email=email, users=user, country=countryEnum, password=password
-        )
+        deposition = api.create_xray_deposition(email=email, users=user, country=countryEnum, password=password)
     elif exptype == "em":
         subtypeEnum = get_subtype_enum(subtype)
         deposition = api.create_em_deposition(
@@ -238,13 +210,9 @@ def create(
             related_emdb=related_id,
         )
     elif exptype == "fiber":
-        deposition = api.create_fiber_deposition(
-            email=email, users=user, country=countryEnum, password=password
-        )
+        deposition = api.create_fiber_deposition(email=email, users=user, country=countryEnum, password=password)
     elif exptype == "neutron":
-        deposition = api.create_neutron_deposition(
-            email=email, users=user, country=countryEnum, password=password
-        )
+        deposition = api.create_neutron_deposition(email=email, users=user, country=countryEnum, password=password)
     if not deposition:
         raise ValueError("Failed to create deposition")
     dep_id = deposition.dep_id
@@ -253,9 +221,7 @@ def create(
 
 
 @app.command()
-def upload(
-    dep_id: str, file_path: str, file_type: str, overwrite: bool = False
-) -> bool:
+def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False) -> bool:
     """Upload file to OneDep system"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
@@ -365,9 +331,7 @@ def process(
                 "copy_em_exp_data": True,
             }
     api = DepositApi()
-    response = api.process(
-        dep_id, voxel=voxel, copy_from_id=copy_dep_id, **copy_elements
-    )
+    response = api.process(dep_id, voxel=voxel, copy_from_id=copy_dep_id, **copy_elements)
     if isinstance(response, DepositStatus):
         console.print(response.status)
         return True
@@ -446,9 +410,7 @@ def update(
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
-    file = api.update_metadata(
-        dep_id, file_id, spacing_x, spacing_y, spacing_z, contour, description
-    )
+    file = api.update_metadata(dep_id, file_id, spacing_x, spacing_y, spacing_z, contour, description)
     console.print(f"Updated file: {file}")
     return True
 

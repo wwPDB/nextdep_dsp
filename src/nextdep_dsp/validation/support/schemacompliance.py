@@ -6,27 +6,33 @@ from pathlib import Path
 from enum import Enum
 from nextdep_dsp.validation.support.keywords import Keywords
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class ValidationObject:
     """validation object"""
-    schema:str = None
-    datafile:str = None
-    keyword_extension:bool = False
-    valid:'ValidationObject.ValidationResult' = None
-    errors:list[str] = None
+
+    schema: str = None
+    datafile: str = None
+    keyword_extension: bool = False
+    valid: "ValidationObject.ValidationResult" = None
+    errors: list[str] = None
+
     class ValidationResult(Enum):
         """validation result"""
+
         THUMBS_UP = True
         THUMBS_DOWN = False
+
 
 class SchemaCompliance:
     """validation logic for schema compliance"""
 
     spec = validators.Draft202012Validator
 
-    def __init__(self, datafile:str, schemafile:str, keyword_extension:bool=False):
+    def __init__(self, datafile: str, schemafile: str, keyword_extension: bool = False):
         self.datafile = datafile
         self.schemafile = schemafile
         self.keyword_extension = keyword_extension
@@ -55,7 +61,6 @@ class SchemaCompliance:
         """
         result = ValidationObject()
         try:
-
             with open(self.datafile) as f:
                 data = json.load(f)
                 result.datafile = self.datafile
@@ -71,7 +76,7 @@ class SchemaCompliance:
             result.valid = result.ValidationResult.THUMBS_UP
 
         except (ValidationError, Exception) as e:
-            msg = getattr(e, 'message', str(e))
+            msg = getattr(e, "message", str(e))
             logger.error("an exception occurred: %s" % msg)
             result.valid = result.ValidationResult.THUMBS_DOWN
             result.errors = [msg]

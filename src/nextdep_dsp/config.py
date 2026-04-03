@@ -16,9 +16,7 @@ def _parse_bool(value: str, var_name: str) -> bool:
         return True
     if lowered in ("false", "0"):
         return False
-    raise ValueError(
-        f"{var_name}={value!r} is not a valid boolean. Use 'true', 'false', '1', or '0'."
-    )
+    raise ValueError(f"{var_name}={value!r} is not a valid boolean. Use 'true', 'false', '1', or '0'.")
 
 
 _ENV_MAP = {

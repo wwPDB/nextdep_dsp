@@ -10,7 +10,7 @@ from nextdep_dsp.deposition.enum import ExperimentType, EMSubType, FileType
 
 logging.basicConfig(level=logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__file__)
 logger.addHandler(handler)
 
@@ -18,7 +18,7 @@ logger.addHandler(handler)
 class FileCompliance(SchemaCompliance):
     """validation logic for required files"""
 
-    schemafile:str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "files.json")
+    schemafile: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "files.json")
 
     def __init__(self):
         super(FileCompliance, self).__init__(None, getattr(FileCompliance, "schemafile"), False)
@@ -28,7 +28,7 @@ class FileCompliance(SchemaCompliance):
             raise FileNotFoundError("error - schema file not found")
         self.keyword_extension = False
 
-    def inspect_params(self, exptype:str, filetype:list[str], subtype:Optional[str]=None) -> bool:
+    def inspect_params(self, exptype: str, filetype: list[str], subtype: Optional[str] = None) -> bool:
         """entry point for file check with parameters
 
         Args:
@@ -43,7 +43,7 @@ class FileCompliance(SchemaCompliance):
         self.datafile = datafile
         return self.validate_required_files()
 
-    def inspect_files(self, datafile:str) -> bool:
+    def inspect_files(self, datafile: str) -> bool:
         """entry point for file check with prebuilt json file
 
         Args:
@@ -55,7 +55,7 @@ class FileCompliance(SchemaCompliance):
         self.datafile = datafile
         return self.validate_required_files()
 
-    def verify_params(self, exptype:str, filetypes:list[str], subtype:Optional[str]=None) -> bool:
+    def verify_params(self, exptype: str, filetypes: list[str], subtype: Optional[str] = None) -> bool:
         """verify parameters for file check"""
         explist = []
         filelist = []
@@ -80,7 +80,7 @@ class FileCompliance(SchemaCompliance):
             return False
         return True
 
-    def generate_data_file(self, exptype:str, filetypes:list, subtype:Optional[str]=None) -> str:
+    def generate_data_file(self, exptype: str, filetypes: list, subtype: Optional[str] = None) -> str:
         """generate json file dynamically from parameters
 
         Args:
@@ -92,10 +92,7 @@ class FileCompliance(SchemaCompliance):
         """
         if not self.verify_params(exptype, filetypes, subtype):
             raise ValueError("invalid parameters")
-        d = {
-            "method": exptype,
-            "files": filetypes
-        }
+        d = {"method": exptype, "files": filetypes}
         if subtype is not None and subtype != "":
             d.update({"subtype": subtype})
         jsonstring = json.dumps(d)

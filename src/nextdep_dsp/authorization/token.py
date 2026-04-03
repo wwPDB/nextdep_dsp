@@ -46,13 +46,9 @@ def get_api_key(configfile=None) -> str:
     api_key = None
 
     if bool(config.get("token").get("prefer_file")) == True:
-        file_path = os.path.expanduser(
-            config.get("token").get("file_path", "~/.config/nextdep/config.toml")
-        )
+        file_path = os.path.expanduser(config.get("token").get("file_path", "~/.config/nextdep/config.toml"))
         if os.path.isfile(file_path):
-            with open(
-                file_path, "r", encoding=config.get("token").get("encoding")
-            ) as f:
+            with open(file_path, "r", encoding=config.get("token").get("encoding")) as f:
                 keyfile = parse(f.read())
                 api_key = keyfile.get("default").get("api_key")
     else:
@@ -82,9 +78,7 @@ def set_api_key(api_key: str, configfile: str = None) -> bool:
     config = load_token_config(configfile)
 
     if bool(config.get("token").get("prefer_file")) == True:
-        file_path = os.path.expanduser(
-            config.get("token").get("file_path", "~/.config/nextdep/config.toml")
-        )
+        file_path = os.path.expanduser(config.get("token").get("file_path", "~/.config/nextdep/config.toml"))
         toml = None
         if not os.path.exists(os.path.dirname(file_path)):
             os.makedirs(os.path.dirname(file_path))
@@ -142,9 +136,7 @@ def validate_api_key(api_key: str, configfile: str = None) -> bool:
         return False
 
     alg = config.get("token").get("alg")
-    decoded_token = jwt.decode(
-        api_key, algorithms=[alg], options={"verify_signature": False}
-    )
+    decoded_token = jwt.decode(api_key, algorithms=[alg], options={"verify_signature": False})
     expiration_time = decoded_token.get("exp")
     if expiration_time is None or expiration_time <= int(time.time()):
         return False

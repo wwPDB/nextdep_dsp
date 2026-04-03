@@ -70,9 +70,7 @@ def test_load_malformed_toml_raises(monkeypatch, tmp_path):
 def test_load_ignores_unknown_keys_in_file(monkeypatch, tmp_path):
     config_dir = tmp_path / ".config" / "nextdep"
     config_dir.mkdir(parents=True)
-    (config_dir / "config.toml").write_text(
-        '[default]\napi_key = "mykey"\nunknown_key = "ignored"\n'
-    )
+    (config_dir / "config.toml").write_text('[default]\napi_key = "mykey"\nunknown_key = "ignored"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
     config = DepositConfig.load()
     assert config.api_key == "mykey"  # did not raise
@@ -184,9 +182,7 @@ def test_deposit_api_ssl_verify_false_not_filtered(monkeypatch, tmp_path):
 def test_deposit_api_uses_config_file(monkeypatch, tmp_path):
     config_dir = tmp_path / ".config" / "nextdep"
     config_dir.mkdir(parents=True)
-    (config_dir / "config.toml").write_text(
-        '[default]\napi_key = "file-key"\nhostname = "https://file.example.com"\n'
-    )
+    (config_dir / "config.toml").write_text('[default]\napi_key = "file-key"\nhostname = "https://file.example.com"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
     api = DepositApi()

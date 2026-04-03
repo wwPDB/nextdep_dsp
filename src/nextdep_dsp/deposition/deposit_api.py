@@ -73,7 +73,7 @@ class DepositApi:
             api_key=self._api_key,
             ver=self._version,
             ssl_verify=self._ssl_verify,
-            logger=self._logger
+            logger=self._logger,
         )
 
     @handle_invalid_deposit_site

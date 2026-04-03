@@ -41,9 +41,7 @@ def test_regex_validation():
 def test_min_length_validation():
     config = load_token_config(TEST_CONFIG)
     min_length = int(config.get("validation").get("min_length"))
-    assert (
-        len(TEST_TOKEN) >= min_length
-    ), "Token does not meet minimum length requirement"
+    assert len(TEST_TOKEN) >= min_length, "Token does not meet minimum length requirement"
     assert 0 < min_length, "Min length validation broken"
 
 

@@ -9,7 +9,7 @@ console = Console()
 
 
 @app.command()
-def filecheck(exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:Optional[str]=None) -> None:
+def filecheck(exptype: str, filetype: Annotated[list[str], typer.Option()], subtype: Optional[str] = None) -> None:
     """required files command line entry point
 
     Args:
@@ -24,8 +24,9 @@ def filecheck(exptype:str, filetype:Annotated[list[str], typer.Option()], subtyp
     else:
         console.print("validation failed")
 
+
 @app.command()
-def datafile(datafile:str, schemafile:str, keyword_extension:bool = False) -> None:
+def datafile(datafile: str, schemafile: str, keyword_extension: bool = False) -> None:
     """generalized command line entry point
 
     Args:
