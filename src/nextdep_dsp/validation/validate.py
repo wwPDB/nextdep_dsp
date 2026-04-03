@@ -1,32 +1,34 @@
+from typing import Annotated, Optional
+
 import typer
-from typing import Annotated
 from rich.console import Console
-from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
+
 from nextdep_dsp.validation.support.filecompliance import FileCompliance
+from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
 
 app = typer.Typer()
 console = Console()
 
 
 @app.command()
-def filecheck(schemafile:str, exptype:str, filetype:Annotated[list[str], typer.Option()], subtype:str="") -> None:
+def filecheck(exptype: str, filetype: Annotated[list[str], typer.Option()], subtype: Optional[str] = None) -> None:
     """required files command line entry point
 
     Args:
-        schemafile (str): path to schema file
         exptype (str): type of experiment
         filetype (list): list of file types
         subtype (str): subtype for em experiment
     """
-    filec = FileCompliance(schemafile)
+    filec = FileCompliance()
     legit = filec.inspect_params(exptype, filetype, subtype)
     if legit:
         console.print("validated correctly")
     else:
         console.print("validation failed")
 
+
 @app.command()
-def datafile(datafile:str, schemafile:str, keyword_extension:bool = False) -> None:
+def datafile(datafile: str, schemafile: str, keyword_extension: bool = False) -> None:
     """generalized command line entry point
 
     Args:

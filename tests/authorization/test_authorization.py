@@ -1,10 +1,12 @@
-from tomlkit import TOMLDocument
-import re
-import os
-from pathlib import Path
-import jwt
 import datetime
-from nextdep_dsp.authorization.token import load_token_config, set_api_key, get_api_key
+import os
+import re
+from pathlib import Path
+
+import jwt
+from tomlkit import TOMLDocument
+
+from nextdep_dsp.authorization.token import get_api_key, load_token_config, set_api_key
 
 TEST_CONFIG = str(Path(__file__).with_name("test.toml"))
 alg = load_token_config(TEST_CONFIG).get("token").get("alg")
@@ -41,9 +43,7 @@ def test_regex_validation():
 def test_min_length_validation():
     config = load_token_config(TEST_CONFIG)
     min_length = int(config.get("validation").get("min_length"))
-    assert (
-        len(TEST_TOKEN) >= min_length
-    ), "Token does not meet minimum length requirement"
+    assert len(TEST_TOKEN) >= min_length, "Token does not meet minimum length requirement"
     assert 0 < min_length, "Min length validation broken"
 
 
