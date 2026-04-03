@@ -15,7 +15,7 @@ app = typer.Typer()
 console = Console()
 
 
-def sigma(func) -> bool:
+def sigma(func):
     """Preprocess inputs for deposition creation"""
 
     @functools.wraps(func)
@@ -71,7 +71,7 @@ def sigma(func) -> bool:
 
 
 def verify_exp_type(exptype: str) -> bool:
-    """Verify experiment type"""
+    """Verify experiment type enum"""
     exptypes = []
     for e in ExperimentType:
         exptypes.append(e.value)
@@ -112,7 +112,7 @@ def verify_bmrb_id(bmrb_id: str) -> bool:
 
 
 def verify_country(country: str) -> bool:
-    """Verify country format"""
+    """Verify country enum"""
     countries = []
     for c in Country:
         countries.append(c.value)
@@ -125,7 +125,7 @@ def verify_country(country: str) -> bool:
 
 
 def verify_subtype(subtype: str) -> bool:
-    """Verify EM subtype format"""
+    """Verify EM subtype enum"""
     subtypes = []
     for s in EMSubType:
         subtypes.append(s.value)
@@ -138,7 +138,7 @@ def verify_subtype(subtype: str) -> bool:
 
 
 def verify_dep_id(dep_id: str) -> bool:
-    """Check deposition ID"""
+    """Verify ID format"""
     match = re.match(r"^D_\d+$", dep_id)
     if not match:
         return False
@@ -442,7 +442,7 @@ def update(
     contour: float,
     description: str,
 ) -> bool:
-    """Update metadata for a file in a deposition"""
+    """Update data for previously deposited file"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
