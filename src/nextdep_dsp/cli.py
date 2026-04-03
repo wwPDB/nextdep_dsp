@@ -9,7 +9,7 @@ import re
 import functools
 from nextdep_dsp.deposition.deposit_api import DepositApi
 from nextdep_dsp.deposition.enum import EMSubType, ExperimentType, Country, FileType
-from nextdep_dsp.deposition.models import Deposit, DepositedFile, DepositStatus
+from nextdep_dsp.deposition.models import DepositStatus
 
 app = typer.Typer()
 console = Console()
@@ -390,6 +390,10 @@ def get_deposition(dep_id: str) -> bool:
 @app.command()
 def add_users(dep_id: str, orcid: Annotated[list[str], typer.Option()]) -> bool:
     """Add users to deposition"""
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    if not all(verify_orcid(o) for o in orcid):
+        raise ValueError(f"Invalid ORCID format for one or more provided ORCIDs: {orcid}")
     api = DepositApi()
     users = api.add_user(dep_id, orcid)
     for user in users:
@@ -414,6 +418,10 @@ def get_users(dep_id: str) -> bool:
 @app.command()
 def remove_user(dep_id: str, orcid: str) -> bool:
     """Remove user from deposition"""
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    if not verify_orcid(orcid):
+        raise ValueError(f"Invalid ORCID format: {orcid}")
     api = DepositApi()
     user_removed = api.remove_user(dep_id, orcid)
     if user_removed:
