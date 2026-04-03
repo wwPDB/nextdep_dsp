@@ -5,10 +5,12 @@ import time
 from typing import Annotated, Optional
 import typer
 from rich.console import Console
+import json
 import re
 import functools
 from nextdep_dsp.deposition.deposit_api import DepositApi
 from nextdep_dsp.deposition.enum import EMSubType, ExperimentType, Country, FileType
+from nextdep_dsp.deposition.models import Deposit, DepositedFile, DepositStatus
 
 app = typer.Typer()
 console = Console()
@@ -296,6 +298,31 @@ def get_files(dep_id: str) -> bool:
         console.print(file)
         console.print("---------------------------------")
     return True
+
+
+@app.command()
+def process(dep_id: str, voxels_json: Optional[str] = None, copy_dep_id: Optional[str] = None, copy_all: bool = False, copy_contact: bool = False, copy_authors: bool = False, copy_citation: bool = False, copy_grant: bool = False, copy_em_exp: bool = False) -> bool:
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    voxel = None
+    if voxels_json:
+        if not os.path.isfile(voxels_json):
+            raise FileNotFoundError(f"Voxel file not found: {voxels_json}")
+        with open(voxels_json, "r", encoding="utf-8") as f:
+            voxel = json.load(f)
+    copy_elements = {"copy_contact": False, "copy_authors": False, "copy_citation": False, "copy_grant": False, "copy_em_exp_data": False}
+    if copy_dep_id:
+        copy_elements = {"copy_contact": copy_contact, "copy_authors": copy_authors, "copy_citation": copy_citation, "copy_grant": copy_grant, "copy_em_exp_data": copy_em_exp}
+        if copy_all:
+            copy_elements = {"copy_contact": True, "copy_authors": True, "copy_citation": True, "copy_grant": True, "copy_em_exp_data": True}
+    api = DepositApi()
+    response = api.process(dep_id, voxel=voxel, copy_from_id=copy_dep_id, **copy_elements)
+    if isinstance(response, DepositStatus):
+        console.print(response.status)
+        return True
+    else:
+        console.print(response)
+        return False
 
 
 def examples() -> None:
