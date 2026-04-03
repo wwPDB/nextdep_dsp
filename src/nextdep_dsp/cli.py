@@ -336,5 +336,38 @@ def get_deposition(dep_id: str) -> bool:
     return True
 
 
+@app.command()
+def add_users(dep_id: str, orcid: Annotated[list[str], typer.Option()]) -> bool:
+    """Add users to deposition"""
+    api = DepositApi()
+    users = api.add_user(dep_id, orcid)
+    for user in users:
+        console.print(user)
+        console.print("---------------------------------")
+    return True
+
+
+@app.command()
+def get_users(dep_id: str) -> bool:
+    """Get users from deposition"""
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    api = DepositApi()
+    users = api.get_users(dep_id)
+    for user in users:
+        console.print(user)
+        console.print("---------------------------------")
+    return True
+
+
+@app.command()
+def remove_user(dep_id: str, orcid: str) -> bool:
+    """Remove user from deposition"""
+    api = DepositApi()
+    user_removed = api.remove_user(dep_id, orcid)
+    if user_removed:
+        console.print(f"User {orcid} was removed from the deposition {dep_id}.")
+
+
 if __name__ == "__main__":
     app()
