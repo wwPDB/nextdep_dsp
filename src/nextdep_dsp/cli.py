@@ -137,6 +137,14 @@ def verify_subtype(subtype: str) -> bool:
     return True
 
 
+def verify_dep_id(dep_id: str) -> bool:
+    """Check deposition ID"""
+    match = re.match(r"^D_\d+$", dep_id)
+    if not match:
+        return False
+    return True
+
+
 def get_country_enum(country_string: str) -> str:
     """Get Country enum from string"""
     for country in Country:
@@ -168,14 +176,6 @@ def get_file_type_enum(file_type_string: str) -> str:
         "Invalid file type, options are: "
         + ", ".join([file_type.value for file_type in FileType])
     )
-
-
-def verify_dep_id(dep_id: str) -> bool:
-    """Check deposition ID"""
-    match = re.match(r"^D_\d+$", dep_id)
-    if not match:
-        return False
-    return True
 
 
 @app.command()
@@ -256,7 +256,7 @@ def create(
 def upload(
     dep_id: str, file_path: str, file_type: str, overwrite: bool = False
 ) -> bool:
-    """Upload file to deposition"""
+    """Upload file to OneDep system"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     if not os.path.exists(file_path):
@@ -282,7 +282,7 @@ def status(dep_id: str) -> bool:
 
 @app.command()
 def remove_file(dep_id: str, file_id: int) -> bool:
-    """Remove file from deposition"""
+    """Remove file from OneDep system"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
@@ -297,7 +297,7 @@ def remove_file(dep_id: str, file_id: int) -> bool:
 
 @app.command()
 def get_files(dep_id: str) -> bool:
-    """Get files from deposition"""
+    """Get file info from deposition"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
@@ -320,7 +320,7 @@ def process(
     copy_grant: bool = False,
     copy_em_exp: bool = False,
 ) -> bool:
-    """Process deposition
+    """Process deposition files
 
     Args:
         dep_id (str): Deposition ID to process
