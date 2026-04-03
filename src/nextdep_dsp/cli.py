@@ -1,7 +1,6 @@
 """Console script for nextdep_dsp."""
 
 import os
-import time
 from typing import Annotated, Optional
 import typer
 from rich.console import Console
@@ -18,17 +17,18 @@ console = Console()
 
 def sigma(func) -> bool:
     """Preprocess inputs for deposition creation"""
+
     @functools.wraps(func)
     def s(*args, **kwargs):
-        exptype:str = kwargs.get("exptype")
-        email:str = kwargs.get("email")
-        user:list[str] = kwargs.get("user")
-        country:str = kwargs.get("country")
-        subtype:Optional[str] = kwargs.get("subtype")
-        coords:Optional[bool] = kwargs.get("coords")
-        related_id:Optional[str] = kwargs.get("related_id")
-        password:Optional[str] = kwargs.get("password")
-        sf_only:Optional[bool] = kwargs.get("sf_only")
+        exptype: str = kwargs.get("exptype")
+        email: str = kwargs.get("email")
+        user: list[str] = kwargs.get("user")
+        country: str = kwargs.get("country")
+        subtype: Optional[str] = kwargs.get("subtype")
+        coords: Optional[bool] = kwargs.get("coords")
+        related_id: Optional[str] = kwargs.get("related_id")
+        password: Optional[str] = kwargs.get("password")
+        sf_only: Optional[bool] = kwargs.get("sf_only")
 
         v = verify_exp_type(exptype)
         v &= verify_email(email)
@@ -66,6 +66,7 @@ def sigma(func) -> bool:
                     "related-id is only valid for EM, EC, NMR, or SS-NMR deposition"
                 )
         v ^ func(*args, **kwargs)
+
     return s
 
 
@@ -252,7 +253,9 @@ def create(
 
 
 @app.command()
-def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False) -> bool:
+def upload(
+    dep_id: str, file_path: str, file_type: str, overwrite: bool = False
+) -> bool:
     """Upload file to deposition"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
@@ -306,7 +309,17 @@ def get_files(dep_id: str) -> bool:
 
 
 @app.command()
-def process(dep_id: str, voxels_json: Optional[str] = None, copy_dep_id: Optional[str] = None, copy_all: bool = False, copy_contact: bool = False, copy_authors: bool = False, copy_citation: bool = False, copy_grant: bool = False, copy_em_exp: bool = False) -> bool:
+def process(
+    dep_id: str,
+    voxels_json: Optional[str] = None,
+    copy_dep_id: Optional[str] = None,
+    copy_all: bool = False,
+    copy_contact: bool = False,
+    copy_authors: bool = False,
+    copy_citation: bool = False,
+    copy_grant: bool = False,
+    copy_em_exp: bool = False,
+) -> bool:
     """Process deposition
 
     Args:
@@ -328,13 +341,33 @@ def process(dep_id: str, voxels_json: Optional[str] = None, copy_dep_id: Optiona
             raise FileNotFoundError(f"Voxel file not found: {voxels_json}")
         with open(voxels_json, "r", encoding="utf-8") as f:
             voxel = json.load(f)
-    copy_elements = {"copy_contact": False, "copy_authors": False, "copy_citation": False, "copy_grant": False, "copy_em_exp_data": False}
+    copy_elements = {
+        "copy_contact": False,
+        "copy_authors": False,
+        "copy_citation": False,
+        "copy_grant": False,
+        "copy_em_exp_data": False,
+    }
     if copy_dep_id:
-        copy_elements = {"copy_contact": copy_contact, "copy_authors": copy_authors, "copy_citation": copy_citation, "copy_grant": copy_grant, "copy_em_exp_data": copy_em_exp}
+        copy_elements = {
+            "copy_contact": copy_contact,
+            "copy_authors": copy_authors,
+            "copy_citation": copy_citation,
+            "copy_grant": copy_grant,
+            "copy_em_exp_data": copy_em_exp,
+        }
         if copy_all:
-            copy_elements = {"copy_contact": True, "copy_authors": True, "copy_citation": True, "copy_grant": True, "copy_em_exp_data": True}
+            copy_elements = {
+                "copy_contact": True,
+                "copy_authors": True,
+                "copy_citation": True,
+                "copy_grant": True,
+                "copy_em_exp_data": True,
+            }
     api = DepositApi()
-    response = api.process(dep_id, voxel=voxel, copy_from_id=copy_dep_id, **copy_elements)
+    response = api.process(
+        dep_id, voxel=voxel, copy_from_id=copy_dep_id, **copy_elements
+    )
     if isinstance(response, DepositStatus):
         console.print(response.status)
         return True
@@ -392,12 +425,22 @@ def remove_user(dep_id: str, orcid: str) -> bool:
 
 
 @app.command()
-def update(dep_id: str, file_id: int, spacing_x: float, spacing_y: float, spacing_z: float, contour: float, description: str) -> bool:
+def update(
+    dep_id: str,
+    file_id: int,
+    spacing_x: float,
+    spacing_y: float,
+    spacing_z: float,
+    contour: float,
+    description: str,
+) -> bool:
     """Update metadata for a file in a deposition"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
-    file = api.update_metadata(dep_id, file_id, spacing_x, spacing_y, spacing_z, contour, description)
+    file = api.update_metadata(
+        dep_id, file_id, spacing_x, spacing_y, spacing_z, contour, description
+    )
     console.print(f"Updated file: {file}")
     return True
 
