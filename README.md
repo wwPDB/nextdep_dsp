@@ -24,6 +24,12 @@ ssl_verify = false
 redirect = true
 ```
 
+Or run the command line tool:
+
+```bash
+nextdep_api_token set-api-key your.jwt.token
+```
+
 Once set, instantiate with no arguments:
 
 ```python
@@ -107,9 +113,18 @@ api.upload_file(dep_id=dep_id, file_path="/.../test_files/em/emd_33233.png",
 ...
 ```
 
+Or use the command-line tool (start with the --help option):
+```bash
+nextdep_dsp subcmd <args> <options>
+```
+
 ## Features
 
-* TODO
+* Test required files
+
+```bash
+nextdep_schema_compliance filecheck <exptype> --filetype <type> --filetype <type> ...
+```
 
 ## Documentation
 
