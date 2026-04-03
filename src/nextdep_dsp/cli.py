@@ -190,6 +190,7 @@ def create(
     password: Optional[str] = None,
     sf_only: Optional[bool] = None,
 ) -> bool:
+    """Create deposition"""
     api = DepositApi()
     countryEnum = get_country_enum(country)
     if exptype == "xray":
@@ -252,6 +253,7 @@ def create(
 
 @app.command()
 def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False) -> bool:
+    """Upload file to deposition"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     if not os.path.exists(file_path):
@@ -266,6 +268,7 @@ def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False)
 
 @app.command()
 def status(dep_id: str) -> bool:
+    """Get status of deposition"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
@@ -276,6 +279,7 @@ def status(dep_id: str) -> bool:
 
 @app.command()
 def remove_file(dep_id: str, file_id: int) -> bool:
+    """Remove file from deposition"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
@@ -290,6 +294,7 @@ def remove_file(dep_id: str, file_id: int) -> bool:
 
 @app.command()
 def get_files(dep_id: str) -> bool:
+    """Get files from deposition"""
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
@@ -302,6 +307,19 @@ def get_files(dep_id: str) -> bool:
 
 @app.command()
 def process(dep_id: str, voxels_json: Optional[str] = None, copy_dep_id: Optional[str] = None, copy_all: bool = False, copy_contact: bool = False, copy_authors: bool = False, copy_citation: bool = False, copy_grant: bool = False, copy_em_exp: bool = False) -> bool:
+    """Process deposition
+
+    Args:
+        dep_id (str): Deposition ID to process
+        voxels_json (Optional[str], optional): Path to voxels JSON file with voxel values in the following format: ([{"file_id": X, "spacing": Y, "contour": Z}, ...])
+        copy_dep_id (Optional[str], optional): Deposition ID to copy elements from. Defaults to None.
+        copy_all (bool, optional): Copy all elements. Defaults to False.
+        copy_contact (bool, optional): Copy contact information. Defaults to False.
+        copy_authors (bool, optional): Copy authors. Defaults to False.
+        copy_citation (bool, optional): Copy citation. Defaults to False.
+        copy_grant (bool, optional): Copy grant information. Defaults to False.
+        copy_em_exp (bool, optional): Copy EM experiment data. Defaults to False.
+    """
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     voxel = None
