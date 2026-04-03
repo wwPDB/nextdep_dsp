@@ -1,5 +1,6 @@
 """Console script for nextdep_dsp."""
 
+import os
 import time
 from typing import Annotated, Optional
 import typer
@@ -13,10 +14,10 @@ app = typer.Typer()
 console = Console()
 
 
-def filter(func) -> bool:
-    """Filter inputs for deposition creation"""
+def sigma(func) -> bool:
+    """Preprocess inputs for deposition creation"""
     @functools.wraps(func)
-    def preprocess(*args, **kwargs):
+    def s(*args, **kwargs):
         exptype:str = kwargs.get("exptype")
         email:str = kwargs.get("email")
         user:list[str] = kwargs.get("user")
@@ -63,7 +64,7 @@ def filter(func) -> bool:
                     "related-id is only valid for EM, EC, NMR, or SS-NMR deposition"
                 )
         v ^ func(*args, **kwargs)
-    return preprocess
+    return s
 
 
 def verify_exp_type(exptype: str) -> bool:
@@ -167,7 +168,7 @@ def get_file_type_enum(file_type_string: str) -> str:
 
 
 @app.command()
-@filter
+@sigma
 def create(
     exptype: str,
     email: str,
@@ -240,9 +241,16 @@ def create(
 
 
 @app.command()
-def upload(file: str):
-    pass
-
+def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False):
+    if not re.match(r"^D_\d+$", dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+    file_type = get_file_type_enum(file_type)
+    api = DepositApi()
+    file = api.upload_file(dep_id, file_path, file_type, overwrite)
+    console.print(f"Uploaded file: {file}")
+    return True
 
 def examples() -> None:
     """Console script for nextdep_dsp."""
