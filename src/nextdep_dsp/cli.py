@@ -385,7 +385,10 @@ def remove_user(dep_id: str, orcid: str) -> bool:
     user_removed = api.remove_user(dep_id, orcid)
     if user_removed:
         console.print(f"User {orcid} was removed from the deposition {dep_id}.")
-    return True
+        return True
+    else:
+        console.print(f"Failed to remove user {orcid} from the deposition {dep_id}.")
+        return False
 
 
 @app.command()
