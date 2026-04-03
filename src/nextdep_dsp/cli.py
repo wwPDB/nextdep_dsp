@@ -167,6 +167,14 @@ def get_file_type_enum(file_type_string: str) -> str:
     )
 
 
+def verify_dep_id(dep_id: str) -> bool:
+    """Check deposition ID"""
+    match = re.match(r"^D_\d+$", dep_id)
+    if not match:
+        return False
+    return True
+
+
 @app.command()
 @sigma
 def create(
@@ -242,7 +250,7 @@ def create(
 
 @app.command()
 def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False):
-    if not re.match(r"^D_\d+$", dep_id):
+    if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
@@ -250,7 +258,16 @@ def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False)
     api = DepositApi()
     file = api.upload_file(dep_id, file_path, file_type, overwrite)
     console.print(f"Uploaded file: {file}")
-    return True
+
+
+@app.command()
+def status(dep_id: str):
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    api = DepositApi()
+    status = api.get_status(dep_id)
+    console.print(f"Status: {status}")
+
 
 def examples() -> None:
     """Console script for nextdep_dsp."""
