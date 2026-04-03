@@ -244,12 +244,12 @@ def create(
     if not deposition:
         raise ValueError("Failed to create deposition")
     dep_id = deposition.dep_id
-    console.print(deposition)
+    console.print(dep_id)
     return True
 
 
 @app.command()
-def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False):
+def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False) -> bool:
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     if not os.path.exists(file_path):
@@ -257,16 +257,33 @@ def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False)
     file_type = get_file_type_enum(file_type)
     api = DepositApi()
     file = api.upload_file(dep_id, file_path, file_type, overwrite)
-    console.print(f"Uploaded file: {file}")
+    file_id = file.file_id
+    console.print(f"Uploaded file: {file_id}")
+    return True
 
 
 @app.command()
-def status(dep_id: str):
+def status(dep_id: str) -> bool:
     if not verify_dep_id(dep_id):
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     api = DepositApi()
     status = api.get_status(dep_id)
     console.print(f"Status: {status}")
+    return True
+
+
+@app.command()
+def remove_file(dep_id: str, file_id: int) -> bool:
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    api = DepositApi()
+    file_removed = api.remove_file(dep_id, file_id)
+    if file_removed:
+        console.print(f"File {file_id} was removed from the deposition {dep_id}.")
+        return True
+    else:
+        console.print(f"Failed to remove file {file_id} from the deposition {dep_id}.")
+    return False
 
 
 def examples() -> None:
