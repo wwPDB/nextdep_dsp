@@ -385,6 +385,18 @@ def remove_user(dep_id: str, orcid: str) -> bool:
     user_removed = api.remove_user(dep_id, orcid)
     if user_removed:
         console.print(f"User {orcid} was removed from the deposition {dep_id}.")
+    return True
+
+
+@app.command()
+def update(dep_id: str, file_id: int, spacing_x: float, spacing_y: float, spacing_z: float, contour: float, description: str) -> bool:
+    """Update metadata for a file in a deposition"""
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    api = DepositApi()
+    file = api.update_metadata(dep_id, file_id, spacing_x, spacing_y, spacing_z, contour, description)
+    console.print(f"Updated file: {file}")
+    return True
 
 
 if __name__ == "__main__":
