@@ -30,7 +30,7 @@ class MyDepositApi(DepositApi):
         ssl_verify: bool = True,
         logger: logging.Logger = None,
     ):
-        super(MyDepositApi, self).__init__(hostname, api_key, ver, ssl_verify, redirect=False, logger=logger)
+        super().__init__(hostname, api_key, ver, ssl_verify, redirect=False, logger=logger)
         self.rest_adapter = self._rest_adapter
 
 

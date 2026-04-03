@@ -1,11 +1,14 @@
-import os
 import json
-from jsonschema import RefResolver, validators, ValidationError
-from dataclasses import dataclass
-from pathlib import Path
-from enum import Enum
-from nextdep_dsp.validation.support.keywords import Keywords
 import logging
+import os
+from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
+from typing import Optional
+
+from jsonschema import RefResolver, ValidationError, validators
+
+from nextdep_dsp.validation.support.keywords import Keywords
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +17,8 @@ logger = logging.getLogger(__name__)
 class ValidationObject:
     """validation object"""
 
-    schema: str = None
-    datafile: str = None
+    schema: Optional[str] = None
+    datafile: Optional[str] = None
     keyword_extension: bool = False
     valid: "ValidationObject.ValidationResult" = None
     errors: list[str] = None
@@ -32,7 +35,7 @@ class SchemaCompliance:
 
     spec = validators.Draft202012Validator
 
-    def __init__(self, datafile: str, schemafile: str, keyword_extension: bool = False):
+    def __init__(self, datafile: Optional[str], schemafile: str, keyword_extension: bool = False):
         self.datafile = datafile
         self.schemafile = schemafile
         self.keyword_extension = keyword_extension
@@ -43,11 +46,11 @@ class SchemaCompliance:
         if datafile is not None and not os.path.exists(datafile):
             raise FileNotFoundError("error - data file not found")
         if not self.keyword_extension:
-            self.validator = getattr(SchemaCompliance, "spec")
+            self.validator = SchemaCompliance.spec
         else:
             self.keywords = Keywords()
             self.keywords = Keywords.registry()
-            self.validator = validators.extend(getattr(SchemaCompliance, "spec"), self.keywords)
+            self.validator = validators.extend(SchemaCompliance.spec, self.keywords)
         self.resolvepath = Path(self.schemafile).resolve().as_uri()
 
     def validate(self) -> ValidationObject:
@@ -77,7 +80,7 @@ class SchemaCompliance:
 
         except (ValidationError, Exception) as e:
             msg = getattr(e, "message", str(e))
-            logger.error("an exception occurred: %s" % msg)
+            logger.error("an exception occurred: %s", msg)
             result.valid = result.ValidationResult.THUMBS_DOWN
             result.errors = [msg]
 

@@ -1,5 +1,6 @@
-from jsonschema import ValidationError
 import logging
+
+from jsonschema import ValidationError
 
 logger = logging.getLogger(__name__)
 

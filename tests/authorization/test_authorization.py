@@ -1,10 +1,12 @@
-from tomlkit import TOMLDocument
-import re
-import os
-from pathlib import Path
-import jwt
 import datetime
-from nextdep_dsp.authorization.token import load_token_config, set_api_key, get_api_key
+import os
+import re
+from pathlib import Path
+
+import jwt
+from tomlkit import TOMLDocument
+
+from nextdep_dsp.authorization.token import get_api_key, load_token_config, set_api_key
 
 TEST_CONFIG = str(Path(__file__).with_name("test.toml"))
 alg = load_token_config(TEST_CONFIG).get("token").get("alg")

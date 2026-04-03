@@ -1,14 +1,16 @@
 """Console script for nextdep_dsp."""
 
+import functools
+import json
 import os
+import re
 from typing import Annotated, Optional
+
 import typer
 from rich.console import Console
-import json
-import re
-import functools
+
 from nextdep_dsp.deposition.deposit_api import DepositApi
-from nextdep_dsp.deposition.enum import EMSubType, ExperimentType, Country, FileType
+from nextdep_dsp.deposition.enum import Country, EMSubType, ExperimentType, FileType
 from nextdep_dsp.deposition.models import DepositStatus
 
 app = typer.Typer()
@@ -128,7 +130,7 @@ def verify_dep_id(dep_id: str) -> bool:
     return True
 
 
-def get_country_enum(country_string: str) -> str:
+def get_country_enum(country_string: str) -> Country:
     """Get Country enum from string"""
     for country in Country:
         if country.value == country_string:
@@ -136,7 +138,7 @@ def get_country_enum(country_string: str) -> str:
     raise ValueError("Invalid country, options are: " + ", ".join([country.value for country in Country]))
 
 
-def get_subtype_enum(subtype_string: str) -> str:
+def get_subtype_enum(subtype_string: str) -> EMSubType:
     """Get EMSubType enum from string"""
     for subtype in EMSubType:
         if subtype.value == subtype_string:
@@ -144,7 +146,7 @@ def get_subtype_enum(subtype_string: str) -> str:
     raise ValueError("Invalid subtype, options are: " + ", ".join([subtype.value for subtype in EMSubType]))
 
 
-def get_file_type_enum(file_type_string: str) -> str:
+def get_file_type_enum(file_type_string: str) -> FileType:
     """Get FileType enum from string"""
     for file_type in FileType:
         if file_type.value == file_type_string:
@@ -227,9 +229,9 @@ def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False)
         raise ValueError(f"Invalid deposition ID format: {dep_id}")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
-    file_type = get_file_type_enum(file_type)
+    file_type_enum = get_file_type_enum(file_type)
     api = DepositApi()
-    file = api.upload_file(dep_id, file_path, file_type, overwrite)
+    file = api.upload_file(dep_id, file_path, file_type_enum, overwrite)
     file_id = file.file_id
     console.print(f"Uploaded file: {file_id}")
     return True
@@ -305,7 +307,7 @@ def process(
     if voxels_json:
         if not os.path.isfile(voxels_json):
             raise FileNotFoundError(f"Voxel file not found: {voxels_json}")
-        with open(voxels_json, "r", encoding="utf-8") as f:
+        with open(voxels_json, encoding="utf-8") as f:
             voxel = json.load(f)
     copy_elements = {
         "copy_contact": False,

@@ -1,8 +1,10 @@
-import typer
 from typing import Annotated, Optional
+
+import typer
 from rich.console import Console
-from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
+
 from nextdep_dsp.validation.support.filecompliance import FileCompliance
+from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
 
 app = typer.Typer()
 console = Console()

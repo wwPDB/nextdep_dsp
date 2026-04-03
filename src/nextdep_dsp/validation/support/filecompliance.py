@@ -1,12 +1,13 @@
-import os
+import atexit
 import json
+import logging
+import os
 import sys
 import tempfile
-import atexit
-import logging
 from typing import Optional
+
+from nextdep_dsp.deposition.enum import EMSubType, ExperimentType, FileType
 from nextdep_dsp.validation.support.schemacompliance import SchemaCompliance
-from nextdep_dsp.deposition.enum import ExperimentType, EMSubType, FileType
 
 logging.basicConfig(level=logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
@@ -21,9 +22,9 @@ class FileCompliance(SchemaCompliance):
     schemafile: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "schema", "files.json")
 
     def __init__(self):
-        super(FileCompliance, self).__init__(None, getattr(FileCompliance, "schemafile"), False)
+        super().__init__(None, FileCompliance.schemafile, False)
         self.datafile = None
-        self.schemafile = getattr(FileCompliance, "schemafile")
+        self.schemafile = FileCompliance.schemafile
         if not os.path.exists(self.schemafile):
             raise FileNotFoundError("error - schema file not found")
         self.keyword_extension = False
@@ -75,7 +76,7 @@ class FileCompliance(SchemaCompliance):
         if exptype == ExperimentType.EM.value and subtype is None:
             logger.error("subtype is required for EM experiments")
             return False
-        if exptype == ExperimentType.EM.value and not subtype in sublist:
+        if exptype == ExperimentType.EM.value and subtype not in sublist:
             logger.error("invalid subtype")
             return False
         return True
