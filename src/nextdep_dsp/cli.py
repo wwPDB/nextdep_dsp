@@ -286,6 +286,18 @@ def remove_file(dep_id: str, file_id: int) -> bool:
     return False
 
 
+@app.command()
+def get_files(dep_id: str) -> bool:
+    if not verify_dep_id(dep_id):
+        raise ValueError(f"Invalid deposition ID format: {dep_id}")
+    api = DepositApi()
+    files = api.get_files(dep_id)
+    for file in files:
+        console.print(file)
+        console.print("---------------------------------")
+    return True
+
+
 def examples() -> None:
     """Console script for nextdep_dsp."""
     api = DepositApi()
