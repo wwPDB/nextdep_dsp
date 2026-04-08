@@ -1,3 +1,6 @@
+---
+id: 5ff3fd06-1b37-4c57-901c-5738d744d64a
+---
 sequenceDiagram
     box Local machine
     participant A as Adapter
@@ -11,6 +14,9 @@ sequenceDiagram
 
     A->>D: set_experiment_type(local_dep_id, experiment_type)
     D-->>A: Deposit object? LocalDeposit object?
+
+    A->>D: check_required_files() # check if the deposition contains all required files
+    D-->>A: structure with errors and warnings
 
     opt File type check (in the broadest sense. Not required in any particular order) 
         Note over A,D: Perform checks on individual files
@@ -28,18 +34,15 @@ sequenceDiagram
         D-->>A: structure with errors and warnings
 
         Note left of A: For other files
-        A->>D: check_file_type(fd, ft) 
+        A->>D: check_file_type(fd, file_type) 
         D-->>A: structure with errors and warnings
     end
 
     loop For each file
         Note over A,D: Adding files locally
-        A->>D: add_file(fd, ft) # file descriptor, # file type
+        A->>D: add_file(session_id, file_path, file_type) # file descriptor, # file type
         D-->>A: file id
     end
-
-    A->>D: check_required_files() # check if the deposition contains all required files
-    D-->>A: structure with errors and warnings
 
     Note over A,dAPI: Create deposition on DepAPI
     A->>D: deposit(local_dep_id)
