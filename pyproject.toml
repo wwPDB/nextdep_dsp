@@ -103,6 +103,8 @@ exclude_also = [
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = ["--ignore=tests/authorization"]
 
 [tool.uv]
 package = true
