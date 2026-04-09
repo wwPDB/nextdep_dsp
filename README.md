@@ -83,7 +83,6 @@ with dsp.deposit_init(
     email="depositor@example.org",
     users=["0000-0002-5109-8728"],   # ORCID IDs
     country=dsp.Country.USA,
-    experiment_type=dsp.ExperimentType.XRAY,
 ) as dep:
     dep.set_experiment_type(dsp.ExperimentType.EM)
     dep.set_em_params(em_subtype=dsp.EMSubType.SPA, coordinates=True)
@@ -102,6 +101,8 @@ with dsp.deposit_init(
     dep.deposit()
     dep.get_status()
 ```
+
+See [`examples/em_deposition.py`](examples/em_deposition.py) for a complete walkthrough including per-file checks.
 
 ### Resume an existing session
 
