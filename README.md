@@ -47,66 +47,6 @@ export ONEDEP_HOSTNAME="https://onedep-depui-test.wwpdb.org/deposition"
 export ONEDEP_SSL_VERIFY="false"
 ```
 
-### Constructor arguments
-
-Constructor arguments always take precedence over all other sources:
-
-```python
-api = DepositApi(
-    hostname="https://onedep-depui-test.wwpdb.org/deposition",
-    api_key="your.jwt.token",
-    ssl_verify=False,
-)
-```
-
-> **Note:** `DepositApi()` raises `DepositApiException` immediately at instantiation if no `api_key` is configured from any source.
-
-## Using DepositAPI
-
-To create depositions, use the helper methods in `DepositApi`. The example below shows how to create an XRays and EM depositions. Use the enumerations provided in this package to use the APIs.
-
-```python
-# XRAY
-
-api = DepositApi() # parameters will be read from the config file
-deposition = api.create_xray_deposition(email="wbueno@ebi.ac.uk", users=["0000-0002-5109-8728"], country=Country.USA)
-dep_id = deposition.dep_id
-
-file1 = api.upload_file(dep_id=dep_id, file_path="/.../test_files/xray/2gc2.cif",
-                        file_type=FileType.MMCIF_COORD)
-file2 = api.upload_file(dep_id=dep_id, file_path="/.../test_files/xray/2gc2-sf.cif",
-                        file_type=FileType.CRYSTAL_STRUC_FACTORS)
-
-status = api.process(dep_id=dep_id)
-while status.status != "finished":
-    print(f"Deposition {dep_id} status: {status.status}")
-    time.sleep(15)
-    status = api.get_status(dep_id=dep_id)
-
-# EM
-
-deposition = api.create_em_deposition(
-    email="wbueno@ebi.ac.uk",
-    users=["0000-0001-6872-1814"],
-    country=Country.USA,
-    subtype=EMSubType.SPA,
-    coordinates=True
-)
-dep_id = deposition.dep_id
-
-api.upload_file(dep_id=dep_id, file_path="/.../test_files/em/emd_33233.cif",
-                    file_type=FileType.MMCIF_COORD)
-api.upload_file(dep_id=dep_id, file_path="/.../test_files/em/emd_33233.map.gz",
-                    file_type=FileType.EM_MAP)
-api.upload_file(dep_id=dep_id, file_path="/.../test_files/em/emd_33233_half_map_1.map.gz",
-                    file_type=FileType.EM_HALF_MAP)
-api.upload_file(dep_id=dep_id, file_path="/.../test_files/em/emd_33233_half_map_2.map.gz",
-                    file_type=FileType.EM_HALF_MAP)
-api.upload_file(dep_id=dep_id, file_path="/.../test_files/em/emd_33233.png",
-                    file_type=FileType.ENTRY_IMAGE)
-...
-```
-
 ## DSP API
 
 The DSP (Deposition Software Provider) API is the high-level interface for third-party suites (CCP4, Phenix, GlobalPhasing) to stage files locally, run pre-submission checks, and submit depositions to OneDep. It persists session state in a local SQLite database so workflows can be interrupted and resumed.
@@ -137,6 +77,31 @@ with dsp.deposit_init(
 ```
 
 See [`examples/xray_deposition.py`](examples/xray_deposition.py) for a complete walkthrough including per-file checks.
+
+```python
+with dsp.deposit_init(
+    email="depositor@example.org",
+    users=["0000-0002-5109-8728"],   # ORCID IDs
+    country=dsp.Country.USA,
+    experiment_type=dsp.ExperimentType.XRAY,
+) as dep:
+    dep.set_experiment_type(dsp.ExperimentType.EM)
+    dep.set_em_params(em_subtype=dsp.EMSubType.SPA, coordinates=True)
+
+    coord_id = dep.add_file('emd_33233.cif',   dsp.FileType.MMCIF_COORD)
+    map_id = dep.add_file('emd_33233.map.gz',     dsp.FileType.EM_MAP)
+    half1_id = dep.add_file('emd_33233_half_map_1.map.gz',   dsp.FileType.EM_HALF_MAP)
+    half2_id = dep.add_file('emd_33233_half_map_2.map.gz',   dsp.FileType.EM_HALF_MAP)
+    dep.add_file('emd_33233.png',   dsp.FileType.ENTRY_IMAGE)
+    dep.check_required_files()
+
+    dep.set_voxel_values(map_id,   spacing_x=1.0825, spacing_y=1.0825, spacing_z=1.0825, contour=0.01)
+    dep.set_voxel_values(half1_id, spacing_x=1.0825, spacing_y=1.0825, spacing_z=1.0825, contour=0.01)
+    dep.set_voxel_values(half2_id, spacing_x=1.0825, spacing_y=1.0825, spacing_z=1.0825, contour=0.01)
+    dep.check_file_type(fsc_xml_id, dsp.FileType.FSC_XML)
+    dep.deposit()
+    dep.get_status()
+```
 
 ### Resume an existing session
 
