@@ -24,7 +24,7 @@ MAP_FILE     = f"{BASE}/emd_33233.map.gz"
 HALF_MAP_1   = f"{BASE}/emd_33233_half_map_1.map.gz"
 HALF_MAP_2   = f"{BASE}/emd_33233_half_map_2.map.gz"
 IMAGE_FILE   = f"{BASE}/emd_33233.png"
-FSC_XML_FILE = f"{BASE}/emd_33233.xml"
+# FSC_XML_FILE = f"{BASE}/emd_33233.xml"
 
 
 def print_report(label: str, report: dsp.CheckReport) -> None:
@@ -69,7 +69,7 @@ def main() -> None:
     half1_id   = dep.add_file(HALF_MAP_1,   dsp.FileType.EM_HALF_MAP)
     half2_id   = dep.add_file(HALF_MAP_2,   dsp.FileType.EM_HALF_MAP)
     image_id   = dep.add_file(IMAGE_FILE,   dsp.FileType.ENTRY_IMAGE)
-    fsc_xml_id = dep.add_file(FSC_XML_FILE, dsp.FileType.FSC_XML)
+    # fsc_xml_id = dep.add_file(FSC_XML_FILE, dsp.FileType.FSC_XML)
 
     for file_id, label, ftype in [
         (coord_id,   "coord",   dsp.FileType.MMCIF_COORD),
@@ -77,7 +77,7 @@ def main() -> None:
         (half1_id,   "half1",   dsp.FileType.EM_HALF_MAP),
         (half2_id,   "half2",   dsp.FileType.EM_HALF_MAP),
         (image_id,   "image",   dsp.FileType.ENTRY_IMAGE),
-        (fsc_xml_id, "fsc_xml", dsp.FileType.FSC_XML),
+        # (fsc_xml_id, "fsc_xml", dsp.FileType.FSC_XML),
     ]:
         print(f"  added {label:<8} file_id={file_id}  type={ftype.value}")
 
@@ -107,7 +107,7 @@ def main() -> None:
     print_report("check_file_type (half1, EM_HALF_MAP)", dep.check_file_type(half1_id, dsp.FileType.EM_HALF_MAP))
     print_report("check_file_type (half2, EM_HALF_MAP)", dep.check_file_type(half2_id, dsp.FileType.EM_HALF_MAP))
     print_report("check_file_type (image, ENTRY_IMAGE)", dep.check_file_type(image_id, dsp.FileType.ENTRY_IMAGE))
-    print_report("check_file_type (fsc,   FSC_XML)",     dep.check_file_type(fsc_xml_id, dsp.FileType.FSC_XML))
+    # print_report("check_file_type (fsc,   FSC_XML)",     dep.check_file_type(fsc_xml_id, dsp.FileType.FSC_XML))
 
     # ── 7. Required files check (after adding files) ──────────────────────────
     print("\n=== Post-add Required Files Check ===")
