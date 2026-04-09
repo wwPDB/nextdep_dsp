@@ -1,16 +1,20 @@
 """Console script for nextdep_dsp."""
 
+from __future__ import annotations
+
 import logging
-import time
+from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.logging import RichHandler
-
-from nextdep_dsp.deposition.deposit_api import DepositApi, Country, FileType
-from nextdep_dsp.deposition.enum import EMSubType
+from rich.table import Table
 
 app = typer.Typer()
+sessions_app = typer.Typer(help="Manage local deposition sessions.")
+app.add_typer(sessions_app, name="sessions")
+
 console = Console()
 
 logging.basicConfig(
@@ -22,29 +26,54 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-@app.command()
-def main() -> None:
-    """Console script for nextdep_dsp."""
-    api = DepositApi()
-    # deposition = api.create_xray_deposition(email="wbueno@ebi.ac.uk", users=["0000-0001-6872-1814"], country=Country.USA)
-    deposition = api.create_xray_deposition(email="wbueno@ebi.ac.uk", users=["0000-0002-5109-8728"], country=Country.USA)
-    log.info("Created deposition: %s", deposition)
+@sessions_app.command("list")
+def sessions_list(
+    base_dir: Optional[Path] = typer.Option(None, "--base-dir", help="Override session storage directory."),
+) -> None:
+    """List all local deposition sessions."""
+    from nextdep_dsp.dsp import list_sessions
 
-    dep_id = deposition.dep_id
-    # dep_id = "D_800268"
-    result = api.upload_file(dep_id=dep_id, file_path="/home/wbueno/repos/test_files/xray/2gc2.cif",
-                             file_type=FileType.MMCIF_COORD)
-    log.info("Uploading coord file: %s", result)
-    result = api.upload_file(dep_id=dep_id, file_path="/home/wbueno/repos/test_files/xray/2gc2-sf.cif",
-                             file_type=FileType.CRYSTAL_STRUC_FACTORS)
-    log.info("Uploading SF file: %s", result)
-    # log.info("Remove file: %s", api.remove_file(dep_id=dep_id, file_id=800))
-    log.info("Process: %s", api.process(dep_id=dep_id))
-    status = api.get_status(dep_id=dep_id)
-    while status.status != "FINISHED":
-        log.info("Deposition %s status: %s", dep_id, status.status)
-        time.sleep(5)
-        status = api.get_status(dep_id=dep_id)
+    entries = list_sessions(base_dir=base_dir)
+
+    if not entries:
+        console.print("[yellow]No sessions found.[/yellow]")
+        raise typer.Exit()
+
+    table = Table(
+        show_header=True,
+        header_style="bold cyan",
+        show_lines=True,
+    )
+    table.add_column("Session ID", style="dim", no_wrap=True, min_width=36)
+    table.add_column("Created", no_wrap=True, min_width=16)
+    table.add_column("Email", min_width=20)
+    table.add_column("Experiment", justify="center", min_width=10)
+    table.add_column("Remote dep ID", justify="center", min_width=12)
+    table.add_column("Files", min_width=30)
+
+    for session, files in entries:
+        remote = session.remote_dep_id or "[dim](none)[/dim]"
+        experiment = session.experiment_type.value if session.experiment_type else "[dim]-[/dim]"
+        created = session.created_at.strftime("%Y-%m-%d %H:%M")
+
+        if files:
+            files_text = "\n".join(
+                f"[green]{Path(f.file_path).name}[/green]  [dim]{f.file_type.value}[/dim]"
+                for f in files
+            )
+        else:
+            files_text = "[dim](none)[/dim]"
+
+        table.add_row(
+            session.session_id,
+            created,
+            session.email,
+            experiment,
+            remote,
+            files_text,
+        )
+
+    console.print(table)
 
 
 if __name__ == "__main__":

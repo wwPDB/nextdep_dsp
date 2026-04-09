@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
-from nextdep_dsp.dsp import Deposition, deposit_init
+from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume
 
 
 # ---------------------------------------------------------------------------
@@ -48,6 +48,58 @@ def test_deposit_init_creates_db_file(tmp_path):
 def test_deposit_init_remote_dep_id_is_none(tmp_path):
     dep = _make_deposition(tmp_path)
     assert dep.remote_dep_id is None
+
+
+# ---------------------------------------------------------------------------
+# deposit_resume
+# ---------------------------------------------------------------------------
+
+def test_deposit_resume_returns_same_session(tmp_path):
+    dep = _make_deposition(tmp_path)
+    session_id = dep.session_id
+    dep.close()
+
+    resumed = deposit_resume(session_id, _base_dir=tmp_path)
+    assert resumed.session_id == session_id
+
+
+def test_deposit_resume_restores_state(tmp_path):
+    dep = deposit_init(
+        email="user@example.com",
+        users=["0000-0001-2345-6789"],
+        country=Country.UK,
+        experiment_type=ExperimentType.EM,
+        _base_dir=tmp_path,
+    )
+    session_id = dep.session_id
+    dep.close()
+
+    resumed = deposit_resume(session_id, _base_dir=tmp_path)
+    from nextdep_dsp.session.store import SessionStore
+    store = SessionStore(session_id, base_dir=tmp_path)
+    session = store.get_session()
+    assert session.experiment_type == ExperimentType.EM
+    assert session.email == "user@example.com"
+    store.close()
+
+
+def test_deposit_resume_restores_files(tmp_path):
+    dep = _make_deposition(tmp_path)
+    cif = tmp_path / "model.cif"
+    cif.write_text("data\n")
+    file_id = dep.add_file(str(cif), FileType.MMCIF_COORD)
+    session_id = dep.session_id
+    dep.close()
+
+    resumed = deposit_resume(session_id, _base_dir=tmp_path)
+    result = resumed.check_mmcif_file(file_id)
+    from nextdep_dsp.checks.report import CheckReport
+    assert isinstance(result, CheckReport)
+
+
+def test_deposit_resume_raises_for_unknown_session(tmp_path):
+    with pytest.raises(KeyError):
+        deposit_resume("00000000-0000-0000-0000-000000000000", _base_dir=tmp_path)
 
 
 # ---------------------------------------------------------------------------
@@ -294,11 +346,16 @@ def test_get_experiment_file_types_returns_list(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# double-submit guard
+# re-submit to existing deposition
 # ---------------------------------------------------------------------------
 
-def test_deposit_raises_if_already_deposited(tmp_path):
+def test_deposit_skips_create_if_remote_dep_id_set(tmp_path):
+    """Second deposit() reuses the existing remote deposition."""
     dep = _make_deposition(tmp_path)
+    cif = tmp_path / "model.cif"
+    cif.write_text("data\n")
+    dep.add_file(str(cif), FileType.MMCIF_COORD)
+
     with patch("nextdep_dsp.dsp.DepositApi") as mock_cls:
         mock_api = MagicMock()
         mock_cls.return_value = mock_api
@@ -306,9 +363,47 @@ def test_deposit_raises_if_already_deposited(tmp_path):
         mock_deposit.dep_id = "D_1"
         mock_api.create_deposition.return_value = mock_deposit
         dep.deposit()
-    with pytest.raises(ValueError, match="already been deposited"):
-        with patch("nextdep_dsp.dsp.DepositApi"):
-            dep.deposit()
+
+    extra = tmp_path / "extra.cif"
+    extra.write_text("data\n")
+    dep.add_file(str(extra), FileType.CRYSTAL_STRUC_FACTORS)
+
+    with patch("nextdep_dsp.dsp.DepositApi") as mock_cls:
+        mock_api = MagicMock()
+        mock_cls.return_value = mock_api
+        result = dep.deposit()
+
+    mock_api.create_deposition.assert_not_called()
+    assert result == "D_1"
+
+
+def test_deposit_resubmit_uploads_all_files(tmp_path):
+    """Re-submit uploads all currently registered files."""
+    dep = _make_deposition(tmp_path)
+    for name in ("model.cif", "sf.cif"):
+        f = tmp_path / name
+        f.write_text("data\n")
+        dep.add_file(str(f), FileType.MMCIF_COORD)
+
+    with patch("nextdep_dsp.dsp.DepositApi") as mock_cls:
+        mock_api = MagicMock()
+        mock_cls.return_value = mock_api
+        mock_deposit = MagicMock()
+        mock_deposit.dep_id = "D_1"
+        mock_api.create_deposition.return_value = mock_deposit
+        dep.deposit()
+
+    extra = tmp_path / "extra.cif"
+    extra.write_text("data\n")
+    dep.add_file(str(extra), FileType.CRYSTAL_STRUC_FACTORS)
+
+    with patch("nextdep_dsp.dsp.DepositApi") as mock_cls:
+        mock_api = MagicMock()
+        mock_cls.return_value = mock_api
+        dep.deposit()
+
+    # 3 files registered at re-submit time
+    assert mock_api.upload_file.call_count == 3
 
 
 # ---------------------------------------------------------------------------

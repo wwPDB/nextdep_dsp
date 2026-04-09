@@ -113,8 +113,8 @@ class DepositApi:
         email: str,
         users: list[str],
         country: Country,
-        subtype: Union[EMSubType, str],  # pylint: disable=unused-argument
-        coordinates: bool,
+        coordinates: bool = True,
+        subtype: Union[EMSubType, str, None] = None,
         related_emdb: str = None,
         password: str = "",
         **kwargs,

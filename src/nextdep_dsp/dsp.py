@@ -6,17 +6,55 @@ from pathlib import Path
 
 from nextdep_dsp.checks.file_checks import (
     check_file_type as _check_file_type,
+)
+from nextdep_dsp.checks.file_checks import (
     check_mmcif_category as _check_mmcif_category,
+)
+from nextdep_dsp.checks.file_checks import (
     check_mmcif_field as _check_mmcif_field,
+)
+from nextdep_dsp.checks.file_checks import (
     check_mmcif_file as _check_mmcif_file,
+)
+from nextdep_dsp.checks.file_checks import (
     check_required_files as _check_required_files,
 )
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.deposition.deposit_api import DepositApi
-from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
+from nextdep_dsp.deposition.enum import Country, EMSubType, ExperimentType, FileType
 from nextdep_dsp.deposition.models import DepositError, DepositStatus, Experiment
 from nextdep_dsp.session.models import LocalFile, LocalSession
 from nextdep_dsp.session.store import SessionStore
+
+
+def list_sessions(base_dir: Path | None = None) -> list[tuple[LocalSession, list[LocalFile]]]:
+    """Return all local sessions with their registered files.
+
+    Args:
+        base_dir: Override session storage directory (for testing only).
+
+    Returns:
+        List of (LocalSession, files) pairs, newest first.
+    """
+    _base = base_dir or (Path.home() / ".nextdep" / "sessions")
+    if not _base.exists():
+        return []
+
+    results: list[tuple[LocalSession, list[LocalFile]]] = []
+    for entry in sorted(_base.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+        db_path = entry / "session.db"
+        if not db_path.exists():
+            continue
+        try:
+            store = SessionStore(entry.name, base_dir=_base)
+            session = store.get_session()
+            files = store.get_all_files()
+            store.close()
+            results.append((session, files))
+        except Exception:  # noqa: BLE001
+            continue
+
+    return results
 
 
 def deposit_init(
@@ -24,8 +62,10 @@ def deposit_init(
     users: list[str],
     country: Country,
     experiment_type: ExperimentType | None = None,
+    em_subtype: EMSubType | str | None = None,
+    coordinates: bool | None = None,
     _base_dir: Path | None = None,
-) -> "Deposition":
+) -> Deposition:
     """Create a new local deposition session.
 
     Args:
@@ -33,6 +73,8 @@ def deposit_init(
         users: List of ORCID IDs granted access to this deposition.
         country: Depositor country (use the Country enum).
         experiment_type: Experiment type (can be set later via set_experiment_type).
+        em_subtype: EM experiment subtype (required for EM depositions; can be set later via set_em_params).
+        coordinates: Whether coordinates are being deposited (EM/EC/NMR; can be set later via set_em_params).
         _base_dir: Override session storage directory (for testing only).
 
     Returns:
@@ -40,6 +82,7 @@ def deposit_init(
     """
     session_id = str(uuid.uuid4())
     store = SessionStore(session_id, base_dir=_base_dir)
+    em_subtype_str = em_subtype.value if isinstance(em_subtype, EMSubType) else em_subtype
     session = LocalSession(
         session_id=session_id,
         email=email,
@@ -48,8 +91,31 @@ def deposit_init(
         experiment_type=experiment_type,
         created_at=datetime.now(),
         db_path=str(store.db_path),
+        em_subtype=em_subtype_str,
+        coordinates=coordinates,
     )
     store.create_session(session)
+    return Deposition(store=store)
+
+
+def deposit_resume(
+    session_id: str,
+    _base_dir: Path | None = None,
+) -> "Deposition":
+    """Resume an existing local deposition session.
+
+    Args:
+        session_id: The session_id returned by a previous deposit_init() call.
+        _base_dir: Override session storage directory (for testing only).
+
+    Returns:
+        A Deposition object for the existing session.
+
+    Raises:
+        KeyError: If no session with the given session_id exists.
+    """
+    store = SessionStore(session_id, base_dir=_base_dir)
+    store.get_session()  # raises KeyError if not found
     return Deposition(store=store)
 
 
@@ -74,6 +140,22 @@ class Deposition:
         """Set or update the experiment type for this deposition."""
         self._store.update_experiment_type(experiment_type)
         self._session.experiment_type = experiment_type
+
+    def set_em_params(
+        self,
+        em_subtype: EMSubType | str | None = None,
+        coordinates: bool | None = None,
+    ) -> None:
+        """Set EM-specific parameters for this deposition.
+
+        Args:
+            em_subtype: EM experiment subtype (e.g. EMSubType.SPA).
+            coordinates: Whether coordinates are being deposited.
+        """
+        em_subtype_str = em_subtype.value if isinstance(em_subtype, EMSubType) else em_subtype
+        self._store.update_em_params(em_subtype_str, coordinates)
+        self._session.em_subtype = em_subtype_str
+        self._session.coordinates = coordinates
 
     def check_auth_key(self) -> bool:
         """Return True if the configured API key is valid, False otherwise."""
@@ -112,6 +194,27 @@ class Deposition:
     def remove_file(self, file_id: str) -> None:
         """Remove a file from this local session by its file_id."""
         self._store.remove_file(file_id)
+
+    def set_voxel_values(
+        self,
+        file_id: str,
+        spacing_x: float,
+        spacing_y: float,
+        spacing_z: float,
+        contour: float,
+    ) -> None:
+        """Set voxel spacing and contour level for a map file.
+
+        Must be called for EM_MAP and EM_HALF_MAP files before deposit().
+
+        Args:
+            file_id: Local file ID returned by add_file().
+            spacing_x: Pixel spacing along X axis (Å).
+            spacing_y: Pixel spacing along Y axis (Å).
+            spacing_z: Pixel spacing along Z axis (Å).
+            contour: Contour level for the map.
+        """
+        self._store.set_voxel_values(file_id, spacing_x, spacing_y, spacing_z, contour)
 
     def check_required_files(self) -> CheckReport:
         """Check that the session contains all required files for the experiment type."""
@@ -158,25 +261,43 @@ class Deposition:
                 "experiment_type must be set before calling deposit(). "
                 "Use set_experiment_type() or pass experiment_type to deposit_init()."
             )
-        if self._session.remote_dep_id is not None:
-            raise ValueError(
-                f"This session has already been deposited (dep_id={self._session.remote_dep_id!r}). "
-                "Create a new session with deposit_init() to start a new deposition."
-            )
         api = DepositApi()
-        experiment = Experiment(exp_type=self._session.experiment_type.value)
-        remote_deposit = api.create_deposition(
-            email=self._session.email,
-            users=self._session.users,
-            country=self._session.country,
-            experiments=[experiment],
-        )
-        dep_id = remote_deposit.dep_id
-        # Persist remote ID immediately so it survives any subsequent failure
-        self._store.set_remote_dep_id(dep_id)
-        self._session.remote_dep_id = dep_id
+        if self._session.remote_dep_id is None:
+            if self._session.experiment_type == ExperimentType.EM:
+                remote_deposit = api.create_em_deposition(
+                    email=self._session.email,
+                    users=self._session.users,
+                    country=self._session.country,
+                    subtype=self._session.em_subtype,
+                    coordinates=self._session.coordinates if self._session.coordinates is not None else True,
+                )
+            else:
+                experiment = Experiment(exp_type=self._session.experiment_type.value)
+                remote_deposit = api.create_deposition(
+                    email=self._session.email,
+                    users=self._session.users,
+                    country=self._session.country,
+                    experiments=[experiment],
+                )
+            dep_id = remote_deposit.dep_id
+            # Persist remote ID immediately so it survives any subsequent failure
+            self._store.set_remote_dep_id(dep_id)
+            self._session.remote_dep_id = dep_id
+        else:
+            dep_id = self._session.remote_dep_id
         for file in self._store.get_all_files():
-            api.upload_file(dep_id, file.file_path, file.file_type)
+            deposited = api.upload_file(dep_id, file.file_path, file.file_type)
+            if file.voxel:
+                v = file.voxel
+                api.update_metadata(
+                    dep_id,
+                    deposited.file_id,
+                    spacing_x=v["spacing_x"],
+                    spacing_y=v["spacing_y"],
+                    spacing_z=v["spacing_z"],
+                    contour=v["contour"],
+                    description="",
+                )
         api.process(dep_id)
         return dep_id
 
@@ -184,7 +305,7 @@ class Deposition:
         """Close the underlying session store connection."""
         self._store.close()
 
-    def __enter__(self) -> "Deposition":
+    def __enter__(self) -> Deposition:
         return self
 
     def __exit__(self, *args: object) -> None:

@@ -12,6 +12,7 @@ class LocalFile:
     session_id: str
     file_path: str
     file_type: FileType
+    voxel: dict | None = None
 
 
 @dataclass
@@ -24,3 +25,5 @@ class LocalSession:
     created_at: datetime
     db_path: str
     remote_dep_id: str | None = None
+    em_subtype: str | None = None
+    coordinates: bool | None = None

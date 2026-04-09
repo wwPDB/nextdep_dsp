@@ -107,9 +107,68 @@ api.upload_file(dep_id=dep_id, file_path="/.../test_files/em/emd_33233.png",
 ...
 ```
 
-## Features
+## DSP API
 
-* TODO
+The DSP (Deposition Software Provider) API is the high-level interface for third-party suites (CCP4, Phenix, GlobalPhasing) to stage files locally, run pre-submission checks, and submit depositions to OneDep. It persists session state in a local SQLite database so workflows can be interrupted and resumed.
+
+### New deposition
+
+```python
+import nextdep_dsp as dsp
+
+with dsp.deposit_init(
+    email="depositor@example.org",
+    users=["0000-0002-5109-8728"],   # ORCID IDs
+    country=dsp.Country.USA,
+    experiment_type=dsp.ExperimentType.XRAY,
+) as dep:
+    print(dep.session_id)           # save this to resume later
+
+    coord_id = dep.add_file("model.cif",   dsp.FileType.MMCIF_COORD)
+    sf_id    = dep.add_file("data-sf.cif", dsp.FileType.CRYSTAL_STRUC_FACTORS)
+
+    report = dep.check_required_files()
+    if not report.ok:
+        for issue in report.errors():
+            print(issue.message)
+
+    dep_id = dep.deposit()          # non-blocking; triggers upload + process
+    print(dep.get_status())
+```
+
+See [`examples/xray_deposition.py`](examples/xray_deposition.py) for a complete walkthrough including per-file checks.
+
+### Resume an existing session
+
+Sessions are identified by a UUID printed at creation time. Pass it to `deposit_resume()` to reload the full session state — registered files and remote deposition ID included.
+
+```python
+dep = dsp.deposit_resume("your-session-uuid")
+
+dep.add_file("extra.cif", dsp.FileType.CRYSTAL_STRUC_FACTORS)
+dep.deposit()   # reuses the existing remote deposition if already submitted
+```
+
+See [`examples/resume_deposition.py`](examples/resume_deposition.py) for a complete example.
+
+### List all sessions
+
+```bash
+nextdep_dsp sessions list
+```
+
+Displays a table of all local sessions with their metadata and registered files:
+
+```
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Session ID                           ┃ Created          ┃ Email                 ┃ Experiment ┃ Remote dep ID ┃ Files                          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 051dcbe3-59c7-4cf8-8af9-675f375b82ae │ 2026-04-08 11:33 │ depositor@example.org │    xray    │   D_800279    │ 2gc2.cif  co-cif               │
+│                                      │                  │                       │            │               │ 2gc2-sf.cif  xs-cif            │
+└──────────────────────────────────────┴──────────────────┴───────────────────────┴────────────┴───────────────┴────────────────────────────────┘
+```
+
+Sessions with no `Remote dep ID` have not been submitted yet. Pass `--base-dir` to inspect sessions stored in a non-default location.
 
 ## Documentation
 
