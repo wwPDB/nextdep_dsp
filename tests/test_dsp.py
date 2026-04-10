@@ -118,7 +118,6 @@ def test_deposit_resume_restores_files(tmp_path):
 
     resumed = deposit_resume(session_id, _base_dir=tmp_path)
     result = resumed.check_mmcif_file(file_id)
-    from nextdep_dsp.checks.report import CheckReport
     assert isinstance(result, CheckReport)
 
 
@@ -204,14 +203,12 @@ def test_check_auth_key_returns_false_on_exception(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_check_required_files_returns_check_report(tmp_path):
-    from nextdep_dsp.checks.report import CheckReport
     dep = _make_deposition(tmp_path)
     result = dep.check_required_files()
     assert isinstance(result, CheckReport)
 
 
 def test_check_mmcif_file_returns_check_report(tmp_path):
-    from nextdep_dsp.checks.report import CheckReport
     dep = _make_deposition(tmp_path)
     cif = tmp_path / "model.cif"
     cif.write_text("data_test\n")
@@ -221,7 +218,6 @@ def test_check_mmcif_file_returns_check_report(tmp_path):
 
 
 def test_check_mmcif_category_returns_check_report(tmp_path):
-    from nextdep_dsp.checks.report import CheckReport
     dep = _make_deposition(tmp_path)
     cif = tmp_path / "model.cif"
     cif.write_text("data_test\n")
@@ -231,7 +227,6 @@ def test_check_mmcif_category_returns_check_report(tmp_path):
 
 
 def test_check_mmcif_field_returns_check_report(tmp_path):
-    from nextdep_dsp.checks.report import CheckReport
     dep = _make_deposition(tmp_path)
     cif = tmp_path / "model.cif"
     cif.write_text("data_test\n")
@@ -241,7 +236,6 @@ def test_check_mmcif_field_returns_check_report(tmp_path):
 
 
 def test_check_file_type_returns_check_report(tmp_path):
-    from nextdep_dsp.checks.report import CheckReport
     dep = _make_deposition(tmp_path)
     cif = tmp_path / "model.cif"
     cif.write_text("data_test\n")
