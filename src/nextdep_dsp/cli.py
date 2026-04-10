@@ -46,10 +46,9 @@ def sessions_list(
     )
     table.add_column("Session ID", style="dim", no_wrap=True, min_width=36)
     table.add_column("Created", no_wrap=True, min_width=16)
-    table.add_column("Email", min_width=20)
     table.add_column("Experiment", justify="center", min_width=10)
     table.add_column("Remote dep ID", justify="center", min_width=12)
-    table.add_column("Files", min_width=30)
+    table.add_column("Files", min_width=40)
 
     for session, files in entries:
         remote = session.remote_dep_id or "[dim](none)[/dim]"
@@ -57,17 +56,20 @@ def sessions_list(
         created = session.created_at.strftime("%Y-%m-%d %H:%M")
 
         if files:
-            files_text = "\n".join(
-                f"[green]{Path(f.file_path).name}[/green]  [dim]{f.file_type.value}[/dim]"
-                for f in files
-            )
+            file_lines = []
+            for f in files:
+                md5_str = f.md5[:8] if f.md5 else "[dim]-[/dim]"
+                mtime_str = f.file_mtime.strftime("%Y-%m-%d %H:%M") if f.file_mtime else "[dim]-[/dim]"
+                file_lines.append(
+                    f"[green]{md5_str}[/green]  {f.file_path}  [dim]{mtime_str}[/dim]"
+                )
+            files_text = "\n".join(file_lines)
         else:
             files_text = "[dim](none)[/dim]"
 
         table.add_row(
             session.session_id,
             created,
-            session.email,
             experiment,
             remote,
             files_text,
