@@ -66,7 +66,7 @@ class SessionStore:
             country=Country(s["country"]),
             experiment_type=ExperimentType(s["experiment_type"]) if s["experiment_type"] else None,
             created_at=datetime.fromisoformat(s["created_at"]),
-            db_path=str(self._json_path),
+            db_path=s["db_path"],
             remote_dep_id=s["remote_dep_id"],
             em_subtype=s["em_subtype"],
             coordinates=bool(coords_val) if coords_val is not None else None,
