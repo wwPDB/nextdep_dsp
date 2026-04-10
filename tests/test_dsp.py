@@ -41,7 +41,7 @@ def test_deposit_init_session_id_is_uuid(tmp_path):
 
 def test_deposit_init_creates_db_file(tmp_path):
     dep = _make_deposition(tmp_path)
-    db = tmp_path / dep.session_id / "session.db"
+    db = tmp_path / dep.session_id / "session.json"
     assert db.exists()
 
 

@@ -42,8 +42,8 @@ def list_sessions(base_dir: Path | None = None) -> list[tuple[LocalSession, list
 
     results: list[tuple[LocalSession, list[LocalFile]]] = []
     for entry in sorted(_base.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
-        db_path = entry / "session.db"
-        if not db_path.exists():
+        json_path = entry / "session.json"
+        if not json_path.exists():
             continue
         try:
             store = SessionStore(entry.name, base_dir=_base)
