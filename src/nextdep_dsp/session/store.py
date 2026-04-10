@@ -108,6 +108,8 @@ class SessionStore:
             raise ValueError(
                 f"File session_id {file.session_id!r} does not match store session_id {self._session_id!r}"
             )
+        if file.file_mtime is not None and file.file_mtime.tzinfo is None:
+            raise ValueError("file_mtime must be timezone-aware")
         self._data["files"][file.file_id] = {
             "file_id": file.file_id,
             "session_id": file.session_id,
@@ -147,7 +149,7 @@ class SessionStore:
             session_id=entry["session_id"],
             file_path=entry["file_path"],
             file_type=FileType(entry["file_type"]),
-            voxel=entry["voxel"],
+            voxel=entry.get("voxel"),
             md5=entry.get("md5"),
             file_mtime=datetime.fromisoformat(entry["file_mtime"]) if entry.get("file_mtime") else None,
         )
@@ -159,7 +161,7 @@ class SessionStore:
                 session_id=e["session_id"],
                 file_path=e["file_path"],
                 file_type=FileType(e["file_type"]),
-                voxel=e["voxel"],
+                voxel=e.get("voxel"),
                 md5=e.get("md5"),
                 file_mtime=datetime.fromisoformat(e["file_mtime"]) if e.get("file_mtime") else None,
             )
