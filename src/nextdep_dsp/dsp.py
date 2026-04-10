@@ -101,7 +101,7 @@ def deposit_init(
 def deposit_resume(
     session_id: str,
     _base_dir: Path | None = None,
-) -> "Deposition":
+) -> Deposition:
     """Resume an existing local deposition session.
 
     Args:

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -39,7 +37,7 @@ def test_deposit_init_session_id_is_uuid(tmp_path):
     uuid.UUID(dep.session_id)  # raises if not a valid UUID
 
 
-def test_deposit_init_creates_db_file(tmp_path):
+def test_deposit_init_creates_session_file(tmp_path):
     dep = _make_deposition(tmp_path)
     db = tmp_path / dep.session_id / "session.json"
     assert db.exists()
@@ -75,6 +73,7 @@ def test_deposit_resume_restores_state(tmp_path):
     dep.close()
 
     resumed = deposit_resume(session_id, _base_dir=tmp_path)
+    assert resumed.session_id == session_id
     from nextdep_dsp.session.store import SessionStore
     store = SessionStore(session_id, base_dir=tmp_path)
     session = store.get_session()
