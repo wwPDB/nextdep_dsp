@@ -28,7 +28,7 @@ def test_local_session_stores_fields():
         country=Country.UK,
         experiment_type=ExperimentType.XRAY,
         created_at=now,
-        db_path="/home/user/.nextdep/sessions/sess-1/session.db",
+        db_path="/home/user/.nextdep/sessions/sess-1/session.json",
     )
     assert s.session_id == "sess-1"
     assert s.email == "user@example.com"
@@ -47,7 +47,7 @@ def test_local_session_remote_dep_id_defaults_to_none():
         country=Country.USA,
         experiment_type=None,
         created_at=datetime.now(),
-        db_path="/tmp/s.db",
+        db_path="/tmp/s.json",
     )
     assert s.remote_dep_id is None
 
@@ -60,7 +60,7 @@ def test_local_session_accepts_remote_dep_id():
         country=Country.USA,
         experiment_type=None,
         created_at=datetime.now(),
-        db_path="/tmp/s.db",
+        db_path="/tmp/s.json",
         remote_dep_id="D_8000000001",
     )
     assert s.remote_dep_id == "D_8000000001"

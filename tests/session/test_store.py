@@ -171,3 +171,34 @@ def test_get_session_raises_key_error_on_empty_db(tmp_path):
     with pytest.raises(KeyError):
         store.get_session()
     store.close()
+
+
+def test_set_voxel_values_persists_and_round_trips(tmp_path):
+    store = SessionStore("sess-1", base_dir=tmp_path)
+    session = _make_session()
+    session.db_path = str(store.db_path)
+    store.create_session(session)
+
+    f = LocalFile(file_id="file-v1", session_id="sess-1", file_path="/data/map.mrc", file_type=FileType.EM_MAP)
+    store.add_file(f)
+    store.set_voxel_values("file-v1", spacing_x=1.1, spacing_y=2.2, spacing_z=3.3, contour=0.5)
+
+    result = store.get_file("file-v1")
+    assert result.voxel == {"spacing_x": 1.1, "spacing_y": 2.2, "spacing_z": 3.3, "contour": 0.5}
+    store.close()
+
+
+def test_add_file_raises_for_mismatched_session_id(tmp_path):
+    store = SessionStore("sess-1", base_dir=tmp_path)
+    session = _make_session()
+    session.db_path = str(store.db_path)
+    store.create_session(session)
+
+    with pytest.raises(ValueError):
+        store.add_file(LocalFile(
+            file_id="f-mismatch",
+            session_id="wrong-session",
+            file_path="/data/file.cif",
+            file_type=FileType.MMCIF_COORD,
+        ))
+    store.close()
