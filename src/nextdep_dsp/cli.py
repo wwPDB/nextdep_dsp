@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -28,7 +27,7 @@ log = logging.getLogger(__name__)
 
 @sessions_app.command("list")
 def sessions_list(
-    base_dir: Optional[Path] = typer.Option(None, "--base-dir", help="Override session storage directory."),
+    base_dir: Path | None = typer.Option(None, "--base-dir", help="Override session storage directory."),  # noqa: B008
 ) -> None:
     """List all local deposition sessions."""
     from nextdep_dsp.dsp import list_sessions
@@ -58,11 +57,9 @@ def sessions_list(
         if files:
             file_lines = []
             for f in files:
-                md5_str = f.md5[:8] if f.md5 else "[dim]-[/dim]"
+                md5_str = f"[green]{f.md5[:8]}[/green]" if f.md5 else "[dim]-[/dim]"
                 mtime_str = f.file_mtime.strftime("%Y-%m-%d %H:%M") if f.file_mtime else "[dim]-[/dim]"
-                file_lines.append(
-                    f"[green]{md5_str}[/green]  {f.file_path}  [dim]{mtime_str}[/dim]"
-                )
+                file_lines.append(f"{md5_str}  {f.file_path}  [dim]{mtime_str}[/dim]")
             files_text = "\n".join(file_lines)
         else:
             files_text = "[dim](none)[/dim]"
