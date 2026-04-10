@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import hashlib
+from datetime import timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
 from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume
+from nextdep_dsp.session.store import SessionStore
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -55,14 +59,14 @@ def test_add_file_stores_md5_and_mtime(tmp_path):
 
     file_id = dep.add_file(str(test_file), FileType.MMCIF_COORD)
 
-    from nextdep_dsp.session.store import SessionStore
     with SessionStore(dep.session_id, base_dir=tmp_path) as store:
         f = store.get_file(file_id)
 
-    import hashlib
     expected_md5 = hashlib.md5(b"hello").hexdigest()
     assert f.md5 == expected_md5
     assert f.file_mtime is not None
+    assert f.file_mtime.tzinfo is not None
+    assert f.file_mtime.tzinfo == timezone.utc
 
 
 def test_deposit_init_remote_dep_id_is_none(tmp_path):

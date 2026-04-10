@@ -28,6 +28,14 @@ from nextdep_dsp.session.models import LocalFile, LocalSession
 from nextdep_dsp.session.store import SessionStore
 
 
+def _md5_of_file(path: Path, chunk_size: int = 1 << 20) -> str:
+    h = hashlib.md5()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(chunk_size), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def list_sessions(base_dir: Path | None = None) -> list[tuple[LocalSession, list[LocalFile]]]:
     """Return all local sessions with their registered files.
 
@@ -184,7 +192,7 @@ class Deposition:
             raise FileNotFoundError(f"File not found: {file_path}")
         stat = path.stat()
         file_mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
-        md5 = hashlib.md5(path.read_bytes()).hexdigest()
+        md5 = _md5_of_file(path)
         file_id = str(uuid.uuid4())
         local_file = LocalFile(
             file_id=file_id,
