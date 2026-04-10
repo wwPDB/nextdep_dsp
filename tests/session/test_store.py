@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -201,4 +201,44 @@ def test_add_file_raises_for_mismatched_session_id(tmp_path):
             file_path="/data/file.cif",
             file_type=FileType.MMCIF_COORD,
         ))
+    store.close()
+
+
+def test_add_file_stores_md5_and_mtime(tmp_path):
+    store = SessionStore("sess-1", base_dir=tmp_path)
+    session = _make_session()
+    session.db_path = str(store.db_path)
+    store.create_session(session)
+
+    f = LocalFile(
+        file_id="file-m1",
+        session_id="sess-1",
+        file_path="/data/model.cif",
+        file_type=FileType.MMCIF_COORD,
+        md5="abcdef1234567890abcdef1234567890",
+        file_mtime=datetime(2026, 4, 10, 9, 12, 0, tzinfo=timezone.utc),
+    )
+    store.add_file(f)
+    result = store.get_file("file-m1")
+    assert result.md5 == "abcdef1234567890abcdef1234567890"
+    assert result.file_mtime == datetime(2026, 4, 10, 9, 12, 0, tzinfo=timezone.utc)
+    store.close()
+
+
+def test_add_file_without_md5_mtime_returns_none(tmp_path):
+    store = SessionStore("sess-1", base_dir=tmp_path)
+    session = _make_session()
+    session.db_path = str(store.db_path)
+    store.create_session(session)
+
+    f = LocalFile(
+        file_id="file-legacy",
+        session_id="sess-1",
+        file_path="/data/model.cif",
+        file_type=FileType.MMCIF_COORD,
+    )
+    store.add_file(f)
+    result = store.get_file("file-legacy")
+    assert result.md5 is None
+    assert result.file_mtime is None
     store.close()

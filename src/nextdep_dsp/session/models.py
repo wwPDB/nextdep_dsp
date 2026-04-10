@@ -13,6 +13,8 @@ class LocalFile:
     file_path: str
     file_type: FileType
     voxel: dict | None = None
+    md5: str | None = None
+    file_mtime: datetime | None = None
 
 
 @dataclass

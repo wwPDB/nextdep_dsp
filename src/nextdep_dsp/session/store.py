@@ -114,6 +114,8 @@ class SessionStore:
             "file_path": file.file_path,
             "file_type": file.file_type.value,
             "voxel": file.voxel,
+            "md5": file.md5,
+            "file_mtime": file.file_mtime.isoformat() if file.file_mtime else None,
         }
         self._save()
 
@@ -146,6 +148,8 @@ class SessionStore:
             file_path=entry["file_path"],
             file_type=FileType(entry["file_type"]),
             voxel=entry["voxel"],
+            md5=entry.get("md5"),
+            file_mtime=datetime.fromisoformat(entry["file_mtime"]) if entry.get("file_mtime") else None,
         )
 
     def get_all_files(self) -> list[LocalFile]:
@@ -156,6 +160,8 @@ class SessionStore:
                 file_path=e["file_path"],
                 file_type=FileType(e["file_type"]),
                 voxel=e["voxel"],
+                md5=e.get("md5"),
+                file_mtime=datetime.fromisoformat(e["file_mtime"]) if e.get("file_mtime") else None,
             )
             for e in self._data["files"].values()
         ]
