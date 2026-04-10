@@ -42,6 +42,29 @@ def test_deposit_init_creates_session_file(tmp_path):
     assert db.exists()
 
 
+def test_add_file_stores_md5_and_mtime(tmp_path):
+    dep = deposit_init(
+        email="user@example.com",
+        users=["0000-0001-2345-6789"],
+        country=Country.UK,
+        _base_dir=tmp_path,
+    )
+
+    test_file = tmp_path / "model.cif"
+    test_file.write_bytes(b"hello")
+
+    file_id = dep.add_file(str(test_file), FileType.MMCIF_COORD)
+
+    from nextdep_dsp.session.store import SessionStore
+    with SessionStore(dep.session_id, base_dir=tmp_path) as store:
+        f = store.get_file(file_id)
+
+    import hashlib
+    expected_md5 = hashlib.md5(b"hello").hexdigest()
+    assert f.md5 == expected_md5
+    assert f.file_mtime is not None
+
+
 def test_deposit_init_remote_dep_id_is_none(tmp_path):
     dep = _make_deposition(tmp_path)
     assert dep.remote_dep_id is None

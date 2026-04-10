@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from nextdep_dsp.checks.file_checks import (
@@ -181,12 +182,17 @@ class Deposition:
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
+        stat = path.stat()
+        file_mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+        md5 = hashlib.md5(path.read_bytes()).hexdigest()
         file_id = str(uuid.uuid4())
         local_file = LocalFile(
             file_id=file_id,
             session_id=self._session.session_id,
             file_path=str(path.resolve()),
             file_type=file_type,
+            md5=md5,
+            file_mtime=file_mtime,
         )
         self._store.add_file(local_file)
         return file_id
