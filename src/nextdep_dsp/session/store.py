@@ -27,7 +27,7 @@ class SessionStore:
             self._data = {"session": None, "files": {}}
             self._save()
 
-    def __enter__(self) -> "SessionStore":
+    def __enter__(self) -> SessionStore:
         return self
 
     def __exit__(self, *args) -> None:
@@ -117,7 +117,9 @@ class SessionStore:
         }
         self._save()
 
-    def set_voxel_values(self, file_id: str, spacing_x: float, spacing_y: float, spacing_z: float, contour: float) -> None:
+    def set_voxel_values(
+        self, file_id: str, spacing_x: float, spacing_y: float, spacing_z: float, contour: float
+    ) -> None:
         if file_id not in self._data["files"]:
             raise KeyError(f"File {file_id!r} not found in session")
         self._data["files"][file_id]["voxel"] = {
