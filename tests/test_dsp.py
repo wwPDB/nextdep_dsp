@@ -7,7 +7,6 @@ import pytest
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
 from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
