@@ -16,6 +16,10 @@ class SessionStore:
         self._json_path = _base / session_id / "session.json"
         self._json_path.parent.mkdir(parents=True, exist_ok=True)
 
+        tmp = self._json_path.with_suffix(".json.tmp")
+        if tmp.exists():
+            tmp.unlink()
+
         if self._json_path.exists():
             with self._json_path.open() as f:
                 self._data: dict = json.load(f)
@@ -35,9 +39,21 @@ class SessionStore:
 
     def _save(self) -> None:
         tmp = self._json_path.with_suffix(".json.tmp")
-        with tmp.open("w") as f:
-            json.dump(self._data, f, indent=2)
-        os.replace(tmp, self._json_path)
+        try:
+            with tmp.open("w") as f:
+                json.dump(self._data, f, indent=2)
+            os.replace(tmp, self._json_path)
+        except Exception:
+            tmp.unlink(missing_ok=True)
+            raise
+
+    def _require_session(self) -> dict:
+        s = self._data["session"]
+        if s is None:
+            raise RuntimeError(
+                f"No session initialised for session_id {self._session_id!r}. Call create_session() first."
+            )
+        return s
 
     def create_session(self, session: LocalSession) -> None:
         self._data["session"] = {
@@ -50,7 +66,7 @@ class SessionStore:
             "db_path": session.db_path,
             "remote_dep_id": session.remote_dep_id,
             "em_subtype": session.em_subtype,
-            "coordinates": int(session.coordinates) if session.coordinates is not None else None,
+            "coordinates": session.coordinates,
         }
         self._save()
 
@@ -58,7 +74,6 @@ class SessionStore:
         s = self._data["session"]
         if s is None:
             raise KeyError(f"No session found for session_id {self._session_id!r}")
-        coords_val = s["coordinates"]
         return LocalSession(
             session_id=s["session_id"],
             email=s["email"],
@@ -69,23 +84,30 @@ class SessionStore:
             db_path=s["db_path"],
             remote_dep_id=s["remote_dep_id"],
             em_subtype=s["em_subtype"],
-            coordinates=bool(coords_val) if coords_val is not None else None,
+            coordinates=s["coordinates"],
         )
 
     def update_experiment_type(self, experiment_type: ExperimentType) -> None:
-        self._data["session"]["experiment_type"] = experiment_type.value
+        s = self._require_session()
+        s["experiment_type"] = experiment_type.value
         self._save()
 
     def update_em_params(self, em_subtype: str | None, coordinates: bool | None) -> None:
-        self._data["session"]["em_subtype"] = em_subtype
-        self._data["session"]["coordinates"] = int(coordinates) if coordinates is not None else None
+        s = self._require_session()
+        s["em_subtype"] = em_subtype
+        s["coordinates"] = coordinates
         self._save()
 
     def set_remote_dep_id(self, dep_id: str) -> None:
-        self._data["session"]["remote_dep_id"] = dep_id
+        s = self._require_session()
+        s["remote_dep_id"] = dep_id
         self._save()
 
     def add_file(self, file: LocalFile) -> None:
+        if file.session_id != self._session_id:
+            raise ValueError(
+                f"File session_id {file.session_id!r} does not match store session_id {self._session_id!r}"
+            )
         self._data["files"][file.file_id] = {
             "file_id": file.file_id,
             "session_id": file.session_id,
@@ -134,7 +156,6 @@ class SessionStore:
                 voxel=e["voxel"],
             )
             for e in self._data["files"].values()
-            if e["session_id"] == self._session_id
         ]
 
     def close(self) -> None:
