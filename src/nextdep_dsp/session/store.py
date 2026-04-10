@@ -1,62 +1,27 @@
 from __future__ import annotations
 
 import json
-import sqlite3
+import os
 from datetime import datetime
 from pathlib import Path
 
 from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
 from nextdep_dsp.session.models import LocalFile, LocalSession
 
-_CREATE_SESSIONS = """
-CREATE TABLE IF NOT EXISTS sessions (
-    session_id    TEXT PRIMARY KEY,
-    email         TEXT NOT NULL,
-    users         TEXT NOT NULL,
-    country       TEXT NOT NULL,
-    experiment_type TEXT,
-    created_at    TEXT NOT NULL,
-    db_path       TEXT NOT NULL,
-    remote_dep_id TEXT,
-    em_subtype    TEXT,
-    coordinates   INTEGER
-)
-"""
-
-_MIGRATIONS = [
-    "ALTER TABLE sessions ADD COLUMN em_subtype TEXT",
-    "ALTER TABLE sessions ADD COLUMN coordinates INTEGER",
-    "ALTER TABLE files ADD COLUMN voxel TEXT",
-]
-
-_CREATE_FILES = """
-CREATE TABLE IF NOT EXISTS files (
-    file_id    TEXT PRIMARY KEY,
-    session_id TEXT NOT NULL,
-    file_path  TEXT NOT NULL,
-    file_type  TEXT NOT NULL,
-    voxel      TEXT,
-    FOREIGN KEY (session_id) REFERENCES sessions(session_id)
-)
-"""
-
 
 class SessionStore:
     def __init__(self, session_id: str, base_dir: Path | None = None) -> None:
         _base = base_dir or (Path.home() / ".nextdep" / "sessions")
         self._session_id = session_id
-        self._db_path = _base / session_id / "session.db"
-        self._db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self._db_path))
-        self._conn.row_factory = sqlite3.Row
-        with self._conn:
-            self._conn.execute(_CREATE_SESSIONS)
-            self._conn.execute(_CREATE_FILES)
-            for migration in _MIGRATIONS:
-                try:
-                    self._conn.execute(migration)
-                except sqlite3.OperationalError:
-                    pass  # column already exists
+        self._json_path = _base / session_id / "session.json"
+        self._json_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if self._json_path.exists():
+            with self._json_path.open() as f:
+                self._data: dict = json.load(f)
+        else:
+            self._data = {"session": None, "files": {}}
+            self._save()
 
     def __enter__(self) -> "SessionStore":
         return self
@@ -66,122 +31,111 @@ class SessionStore:
 
     @property
     def db_path(self) -> Path:
-        return self._db_path
+        return self._json_path
+
+    def _save(self) -> None:
+        tmp = self._json_path.with_suffix(".json.tmp")
+        with tmp.open("w") as f:
+            json.dump(self._data, f, indent=2)
+        os.replace(tmp, self._json_path)
 
     def create_session(self, session: LocalSession) -> None:
-        with self._conn:
-            self._conn.execute(
-                "INSERT INTO sessions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (
-                    session.session_id,
-                    session.email,
-                    json.dumps(session.users),
-                    session.country.value,
-                    session.experiment_type.value if session.experiment_type else None,
-                    session.created_at.isoformat(),
-                    session.db_path,
-                    session.remote_dep_id,
-                    session.em_subtype,
-                    int(session.coordinates) if session.coordinates is not None else None,
-                ),
-            )
+        self._data["session"] = {
+            "session_id": session.session_id,
+            "email": session.email,
+            "users": session.users,
+            "country": session.country.value,
+            "experiment_type": session.experiment_type.value if session.experiment_type else None,
+            "created_at": session.created_at.isoformat(),
+            "db_path": session.db_path,
+            "remote_dep_id": session.remote_dep_id,
+            "em_subtype": session.em_subtype,
+            "coordinates": int(session.coordinates) if session.coordinates is not None else None,
+        }
+        self._save()
 
     def get_session(self) -> LocalSession:
-        row = self._conn.execute(
-            "SELECT * FROM sessions WHERE session_id = ?", (self._session_id,)
-        ).fetchone()
-        if row is None:
+        s = self._data["session"]
+        if s is None:
             raise KeyError(f"No session found for session_id {self._session_id!r}")
-        coords_val = row["coordinates"]
+        coords_val = s["coordinates"]
         return LocalSession(
-            session_id=row["session_id"],
-            email=row["email"],
-            users=json.loads(row["users"]),
-            country=Country(row["country"]),
-            experiment_type=ExperimentType(row["experiment_type"]) if row["experiment_type"] else None,
-            created_at=datetime.fromisoformat(row["created_at"]),
-            db_path=str(self._db_path),
-            remote_dep_id=row["remote_dep_id"],
-            em_subtype=row["em_subtype"],
+            session_id=s["session_id"],
+            email=s["email"],
+            users=s["users"],
+            country=Country(s["country"]),
+            experiment_type=ExperimentType(s["experiment_type"]) if s["experiment_type"] else None,
+            created_at=datetime.fromisoformat(s["created_at"]),
+            db_path=str(self._json_path),
+            remote_dep_id=s["remote_dep_id"],
+            em_subtype=s["em_subtype"],
             coordinates=bool(coords_val) if coords_val is not None else None,
         )
 
     def update_experiment_type(self, experiment_type: ExperimentType) -> None:
-        with self._conn:
-            self._conn.execute(
-                "UPDATE sessions SET experiment_type = ? WHERE session_id = ?",
-                (experiment_type.value, self._session_id),
-            )
+        self._data["session"]["experiment_type"] = experiment_type.value
+        self._save()
 
     def update_em_params(self, em_subtype: str | None, coordinates: bool | None) -> None:
-        with self._conn:
-            self._conn.execute(
-                "UPDATE sessions SET em_subtype = ?, coordinates = ? WHERE session_id = ?",
-                (
-                    em_subtype,
-                    int(coordinates) if coordinates is not None else None,
-                    self._session_id,
-                ),
-            )
+        self._data["session"]["em_subtype"] = em_subtype
+        self._data["session"]["coordinates"] = int(coordinates) if coordinates is not None else None
+        self._save()
 
     def set_remote_dep_id(self, dep_id: str) -> None:
-        with self._conn:
-            self._conn.execute(
-                "UPDATE sessions SET remote_dep_id = ? WHERE session_id = ?",
-                (dep_id, self._session_id),
-            )
+        self._data["session"]["remote_dep_id"] = dep_id
+        self._save()
 
     def add_file(self, file: LocalFile) -> None:
-        with self._conn:
-            self._conn.execute(
-                "INSERT INTO files VALUES (?, ?, ?, ?, ?)",
-                (file.file_id, file.session_id, file.file_path, file.file_type.value, json.dumps(file.voxel) if file.voxel else None),
-            )
+        self._data["files"][file.file_id] = {
+            "file_id": file.file_id,
+            "session_id": file.session_id,
+            "file_path": file.file_path,
+            "file_type": file.file_type.value,
+            "voxel": file.voxel,
+        }
+        self._save()
 
     def set_voxel_values(self, file_id: str, spacing_x: float, spacing_y: float, spacing_z: float, contour: float) -> None:
-        voxel = {"spacing_x": spacing_x, "spacing_y": spacing_y, "spacing_z": spacing_z, "contour": contour}
-        with self._conn:
-            cursor = self._conn.execute(
-                "UPDATE files SET voxel = ? WHERE file_id = ?",
-                (json.dumps(voxel), file_id),
-            )
-        if cursor.rowcount == 0:
+        if file_id not in self._data["files"]:
             raise KeyError(f"File {file_id!r} not found in session")
+        self._data["files"][file_id]["voxel"] = {
+            "spacing_x": spacing_x,
+            "spacing_y": spacing_y,
+            "spacing_z": spacing_z,
+            "contour": contour,
+        }
+        self._save()
 
     def remove_file(self, file_id: str) -> None:
-        with self._conn:
-            cursor = self._conn.execute("DELETE FROM files WHERE file_id = ?", (file_id,))
-        if cursor.rowcount == 0:
+        if file_id not in self._data["files"]:
             raise KeyError(f"File {file_id!r} not found in session")
+        del self._data["files"][file_id]
+        self._save()
 
     def get_file(self, file_id: str) -> LocalFile:
-        row = self._conn.execute(
-            "SELECT * FROM files WHERE file_id = ?", (file_id,)
-        ).fetchone()
-        if row is None:
+        entry = self._data["files"].get(file_id)
+        if entry is None:
             raise KeyError(f"File {file_id!r} not found in session")
         return LocalFile(
-            file_id=row["file_id"],
-            session_id=row["session_id"],
-            file_path=row["file_path"],
-            file_type=FileType(row["file_type"]),
-            voxel=json.loads(row["voxel"]) if row["voxel"] else None,
+            file_id=entry["file_id"],
+            session_id=entry["session_id"],
+            file_path=entry["file_path"],
+            file_type=FileType(entry["file_type"]),
+            voxel=entry["voxel"],
         )
 
     def get_all_files(self) -> list[LocalFile]:
-        rows = self._conn.execute(
-            "SELECT * FROM files WHERE session_id = ?", (self._session_id,)
-        ).fetchall()
         return [
             LocalFile(
-                file_id=row["file_id"],
-                session_id=row["session_id"],
-                file_path=row["file_path"],
-                file_type=FileType(row["file_type"]),
-                voxel=json.loads(row["voxel"]) if row["voxel"] else None,
+                file_id=e["file_id"],
+                session_id=e["session_id"],
+                file_path=e["file_path"],
+                file_type=FileType(e["file_type"]),
+                voxel=e["voxel"],
             )
-            for row in rows
+            for e in self._data["files"].values()
+            if e["session_id"] == self._session_id
         ]
 
     def close(self) -> None:
-        self._conn.close()
+        pass  # no connection to close
