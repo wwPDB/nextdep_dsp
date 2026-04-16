@@ -75,31 +75,6 @@
       "if": {
         "properties": {
           "method": {
-            "not": {
-              "const": "em"
-            }
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "files": {
-            "contains": {
-              "enum": [
-                "co-pdb",
-                "co-cif"
-              ]
-            },
-            "minContains": 1,
-            "maxContains": 1
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "method": {
             "enum": [
               "xray",
               "neutron"
