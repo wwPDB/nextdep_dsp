@@ -196,6 +196,16 @@
                 },
                 "minContains": 1,
                 "maxContains": 1
+              },
+              {
+                "contains": {
+                  "enum": [
+                    "xs-cif",
+                    "xs-mtz"
+                  ]
+                },
+                "minContains": 0,
+                "maxContains": 1
               }
             ],
             "items": {
