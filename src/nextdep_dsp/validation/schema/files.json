@@ -26,15 +26,6 @@
     },
     "files": {
       "type": "array",
-      "contains": {
-        "enum": [
-          "co-pdb",
-          "co-cif",
-          "vo-map"
-        ]
-      },
-      "minContains": 1,
-      "maxContains": 2,
       "items": {
         "enum": [
           "co-pdb",
