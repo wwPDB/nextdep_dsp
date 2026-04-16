@@ -112,6 +112,36 @@
       "if": {
         "properties": {
           "method": {
+            "const": "fiber"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "files": {
+            "contains": {
+              "const": "layer-lines"
+            },
+            "items": {
+              "enum": [
+                "co-pdb",
+                "co-cif",
+                "layer-lines",
+                "xs-cif",
+                "xs-mtz",
+                "xa-par",
+                "xa-top",
+                "xa-mat"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
             "const": "em"
           }
         }
@@ -158,42 +188,39 @@
       "if": {
         "properties": {
           "method": {
-            "enum": [
-              "nmr",
-              "ssnmr"
-            ]
+            "const": "em"
           }
         }
       },
       "then": {
+        "required": [
+          "subtype"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "subtype": {
+            "enum": [
+              "single",
+              "helical",
+              "subtomogram"
+            ]
+          }
+        },
+        "required": [
+          "subtype"
+        ]
+      },
+      "then": {
         "properties": {
           "files": {
-            "items": {
-              "enum": [
-                "co-pdb",
-                "co-cif",
-                "nm-shi",
-                "nm-res-amb",
-                "nm-aux-amb",
-                "nm-res-bio",
-                "nm-res-cha",
-                "nm-res-cns",
-                "nm-res-cya",
-                "nm-res-dyn",
-                "nm-res-dyn",
-                "nm-res-dyn",
-                "nm-res-gro",
-                "nm-aux-gro",
-                "nm-res-isd",
-                "nm-res-ros",
-                "nm-res-syb",
-                "nm-res-xpl",
-                "nm-res-oth",
-                "nm-pea-any",
-                "nm-uni-nef",
-                "nm-uni-str"
-              ]
-            }
+            "contains": {
+              "const": "half-map"
+            },
+            "minContains": 2,
+            "maxContains": 2
           }
         }
       }
@@ -243,69 +270,42 @@
       "if": {
         "properties": {
           "method": {
-            "const": "fiber"
+            "enum": [
+              "nmr",
+              "ssnmr"
+            ]
           }
         }
       },
       "then": {
         "properties": {
           "files": {
-            "contains": {
-              "const": "layer-lines"
-            },
             "items": {
               "enum": [
                 "co-pdb",
                 "co-cif",
-                "layer-lines",
-                "xs-cif",
-                "xs-mtz",
-                "xa-par",
-                "xa-top",
-                "xa-mat"
+                "nm-shi",
+                "nm-res-amb",
+                "nm-aux-amb",
+                "nm-res-bio",
+                "nm-res-cha",
+                "nm-res-cns",
+                "nm-res-cya",
+                "nm-res-dyn",
+                "nm-res-dyn",
+                "nm-res-dyn",
+                "nm-res-gro",
+                "nm-aux-gro",
+                "nm-res-isd",
+                "nm-res-ros",
+                "nm-res-syb",
+                "nm-res-xpl",
+                "nm-res-oth",
+                "nm-pea-any",
+                "nm-uni-nef",
+                "nm-uni-str"
               ]
             }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "method": {
-            "const": "em"
-          }
-        }
-      },
-      "then": {
-        "required": [
-          "subtype"
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "subtype": {
-            "enum": [
-              "single",
-              "helical",
-              "subtomogram"
-            ]
-          }
-        },
-        "required": [
-          "subtype"
-        ]
-      },
-      "then": {
-        "properties": {
-          "files": {
-            "contains": {
-              "const": "half-map"
-            },
-            "minContains": 2,
-            "maxContains": 2
           }
         }
       }
