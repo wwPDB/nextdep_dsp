@@ -119,9 +119,33 @@
       "then": {
         "properties": {
           "files": {
-            "contains": {
-              "const": "layer-lines"
-            },
+            "allOf": [
+              {
+                "contains": {
+                  "const": "layer-lines"
+                }
+              },
+              {
+                "contains": {
+                  "enum": [
+                    "co-pdb",
+                    "co-cif"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "enum": [
+                    "xs-cif",
+                    "xs-mtz"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            ],
             "items": {
               "enum": [
                 "co-pdb",
