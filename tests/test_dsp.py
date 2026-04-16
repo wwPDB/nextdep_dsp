@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from nextdep_dsp.checks.report import CheckReport
-from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
+from nextdep_dsp.deposition.enum import Country, EMSubType, ExperimentType, FileType
 from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume
 from nextdep_dsp.session.store import SessionStore
 
@@ -206,6 +206,24 @@ def test_check_required_files_returns_check_report(tmp_path):
     dep = _make_deposition(tmp_path)
     result = dep.check_required_files()
     assert isinstance(result, CheckReport)
+
+
+def test_check_required_files_passes_em_subtype(tmp_path):
+    dep = deposit_init(
+        email="user@example.com",
+        users=["0000-0001-2345-6789"],
+        country=Country.UK,
+        experiment_type=ExperimentType.EM,
+        em_subtype=EMSubType.SPA,
+        _base_dir=tmp_path,
+    )
+    with patch("nextdep_dsp.dsp._check_required_files", return_value=CheckReport(source="session")) as mock_check:
+        dep.check_required_files()
+
+    files_arg, experiment_type_arg, em_subtype_arg = mock_check.call_args.args
+    assert len(files_arg) == 0
+    assert experiment_type_arg == ExperimentType.EM
+    assert em_subtype_arg == EMSubType.SPA.value
 
 
 def test_check_mmcif_file_returns_check_report(tmp_path):

@@ -233,7 +233,7 @@ class Deposition:
     def check_required_files(self) -> CheckReport:
         """Check that the session contains all required files for the experiment type."""
         files = self._store.get_all_files()
-        return _check_required_files(files, self._session.experiment_type)
+        return _check_required_files(files, self._session.experiment_type, self._session.em_subtype)
 
     def check_mmcif_file(self, file_id: str) -> CheckReport:
         """Check that the file identified by file_id is a valid mmCIF."""
