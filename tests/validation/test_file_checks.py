@@ -27,6 +27,9 @@ def test_fatal_for_missing_required_files():
     fatal_issues = [i for i in report.issues if i.severity == CheckSeverity.FATAL]
     assert len(fatal_issues) >= 1
     assert all(i.code == "REQ_FILES_MISSING" for i in fatal_issues)
+    assert fatal_issues[0].message == (
+        "Missing required structure factors file: expected one of xs-cif or xs-mtz"
+    )
 
 
 def test_warning_when_experiment_type_unset():
