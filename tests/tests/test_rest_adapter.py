@@ -13,7 +13,7 @@ class TestRestAdapter(unittest.TestCase):
         self.rest_adapter = RestAdapter("http://localhost")
         self.response = requests.Response()
         self.response.status_code = 200
-        self.response._content = "{}".encode()  # pylint: disable=protected-access
+        self.response._content = b"{}"  # pylint: disable=protected-access
         self.deposit_response = Response(status_code=200)
 
     def test_do_successful_request(self):
@@ -24,13 +24,13 @@ class TestRestAdapter(unittest.TestCase):
 
     def test_do_unsuccessful_request(self):
         self.response.status_code = 404
-        self.response._content = '{"error": "Not found"}'.encode()  # pylint: disable=protected-access
+        self.response._content = b'{"error": "Not found"}'  # pylint: disable=protected-access
         with mock.patch.object(self.rest_adapter._session, "request", return_value=self.response):  # pylint: disable=protected-access
             with self.assertRaises(DepositApiException):
                 self.rest_adapter._do("GET", "")  # pylint: disable=protected-access
 
     def test_do_bad_json_response(self):
-        self.response._content = "Not a JSON response".encode()  # pylint: disable=protected-access
+        self.response._content = b"Not a JSON response"  # pylint: disable=protected-access
         with mock.patch.object(self.rest_adapter._session, "request", return_value=self.response):  # pylint: disable=protected-access
             with self.assertRaises(DepositApiException) as cm:
                 self.rest_adapter._do("GET", "")  # pylint: disable=protected-access

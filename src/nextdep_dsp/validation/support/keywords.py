@@ -1,6 +1,9 @@
-from jsonschema import ValidationError
 import logging
+
+from jsonschema import ValidationError
+
 logger = logging.getLogger(__name__)
+
 
 class Keywords:
     """storage for custom schema keyword definitions
@@ -11,10 +14,14 @@ class Keywords:
     @staticmethod
     def registry() -> dict:
         """return a dict of function name: function for all custom validators"""
-        return {key:getattr(Keywords, key) for key in Keywords.__dict__.keys() if callable(getattr(Keywords, key)) and not key.startswith("__") and not key == "registry"}
+        return {
+            key: getattr(Keywords, key)
+            for key in Keywords.__dict__.keys()
+            if callable(getattr(Keywords, key)) and not key.startswith("__") and not key == "registry"
+        }
 
     @staticmethod
-    def wwpdb_resolution_comparator(validator:object, comparator_value:bool, instance:dict, schema:object):
+    def wwpdb_resolution_comparator(validator: object, comparator_value: bool, instance: dict, schema: object):
         """ensure that refinement high resolution is less than or equal to experimental high resolution
         insert keyword wwpdb_resolution_comparator outside of relevant properties section at same level as required properties
         value for keyword is ignored but should be set to true
@@ -57,14 +64,13 @@ class Keywords:
             logger.debug(f"testing {refine_high} >= {reflns_high}")
 
             if refine_high is None or reflns_high is None:
-                raise ValidationError(
-                    f"error - wwpdb_resolution_comparator is missing a value at index {index}"
-                )
+                raise ValidationError(f"error - wwpdb_resolution_comparator is missing a value at index {index}")
 
             if refine_high != reflns_high or refine_high < reflns_high:
                 raise ValidationError(
                     f"Mismatch in wwpdb_resolution_comparator at index {index} for refine {refine_high} reflns {reflns_high}"
                 )
+
 
 if __name__ == "__main__":
     print(Keywords.registry())

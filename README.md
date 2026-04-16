@@ -24,6 +24,12 @@ ssl_verify = false
 redirect = true
 ```
 
+Or run the command line tool:
+
+```bash
+nextdep_api_token set-api-key your.jwt.token
+```
+
 Once set, instantiate with no arguments:
 
 ```python
@@ -135,6 +141,19 @@ Displays a table of all local sessions with their metadata and registered files:
 ```
 
 Sessions with no `Remote dep ID` have not been submitted yet. Pass `--base-dir` to inspect sessions stored in a non-default location.
+Or use the command-line tool (start with the --help option):
+
+```bash
+nextdep_dsp subcmd <args> <options>
+```
+
+## Features
+
+* Test required files
+
+```bash
+nextdep_schema_compliance filecheck <exptype> --filetype <type> --filetype <type> ...
+```
 
 ## Documentation
 
