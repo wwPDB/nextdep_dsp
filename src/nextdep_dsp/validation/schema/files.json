@@ -377,7 +377,8 @@
                   "contains": {
                     "const": "nm-shi"
                   },
-                  "minContains": 1
+                  "minContains": 1,
+                  "maxContains": 1
                 },
                 {
                   "contains": {
@@ -401,6 +402,20 @@
                   "minContains": 1
                 }
               ]
+            }
+          }
+        },
+        "else": {
+          "properties": {
+            "files": {
+              "contains": {
+                "enum": [
+                  "nm-uni-nef",
+                  "nm-uni-str"
+                ]
+              },
+              "minContains": 1,
+              "maxContains": 1
             }
           }
         }
