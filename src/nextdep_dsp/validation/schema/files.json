@@ -136,11 +136,6 @@
             "allOf": [
               {
                 "contains": {
-                  "const": "layer-lines"
-                }
-              },
-              {
-                "contains": {
                   "enum": [
                     "co-pdb",
                     "co-cif"
