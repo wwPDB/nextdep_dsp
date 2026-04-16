@@ -85,14 +85,28 @@
       "then": {
         "properties": {
           "files": {
-            "contains": {
-              "enum": [
-                "xs-cif",
-                "xs-mtz"
-              ]
-            },
-            "minContains": 1,
-            "maxContains": 1,
+            "allOf": [
+              {
+                "contains": {
+                  "enum": [
+                    "co-cif",
+                    "co-pdb"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "enum": [
+                    "xs-cif",
+                    "xs-mtz"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            ],
             "items": {
               "enum": [
                 "co-pdb",
