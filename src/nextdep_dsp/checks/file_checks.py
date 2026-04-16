@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from nextdep_dsp.checks.report import CheckReport
+from pathlib import Path
+
+from nextdep_dsp.checks.report import CheckIssue, CheckReport, CheckSeverity
 from nextdep_dsp.deposition.enum import ExperimentType, FileType
 from nextdep_dsp.session.models import LocalFile
+from nextdep_dsp.validation.support.filecompliance import FileCompliance
+
+_FILES_SCHEMA = str(Path(__file__).parent.parent / "validation" / "schema" / "files.json")
 
 
 def check_mmcif_file(file: LocalFile) -> CheckReport:
@@ -28,6 +33,43 @@ def check_file_type(file: LocalFile, file_type: FileType) -> CheckReport:
 def check_required_files(
     files: list[LocalFile],
     experiment_type: ExperimentType | None,
+    em_subtype: str | None = None,
 ) -> CheckReport:
-    """Check that the session contains all required files for the experiment type. Stub — always passes."""
+    """Check that the session contains all required files for the experiment type.
+
+    Returns a warning-only report when experiment_type is unset, fatal issues when
+    required files are missing, and a clean report when validation passes.
+    """
+    if experiment_type is None:
+        return CheckReport(
+            source="session",
+            issues=[
+                CheckIssue(
+                    severity=CheckSeverity.WARNING,
+                    code="EXPERIMENT_TYPE_UNSET",
+                    message="Experiment type not set — required-file check skipped",
+                )
+            ],
+        )
+
+    filetypes = [file.file_type.value for file in files]
+    compliance = FileCompliance(_FILES_SCHEMA)
+    compliance.datafile = compliance.generate_data_file(
+        experiment_type.value,
+        filetypes,
+        em_subtype or "",
+    )
+    result = compliance.validate()
+
+    if result.valid.value is False:
+        issues = [
+            CheckIssue(
+                severity=CheckSeverity.FATAL,
+                code="REQ_FILES_MISSING",
+                message=message,
+            )
+            for message in (result.errors or ["Required files not satisfied"])
+        ]
+        return CheckReport(source="session", issues=issues)
+
     return CheckReport(source="session")
