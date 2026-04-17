@@ -23,8 +23,13 @@ license = {text = "MIT"}
 dependencies = [
   "typer",
   "rich",
+  "requests>=2.32.5",
+  "tomli; python_version < '3.11'",
+  "jsonschema",
+  "tomlkit",
+  "pyjwt"
 ]
-requires-python = ">= 3.12"
+requires-python = ">= 3.9"
 
 [dependency-groups]
 dev = [
@@ -55,6 +60,8 @@ docs = [
 
 [project.scripts]
 nextdep_dsp = "nextdep_dsp.cli:app"
+nextdep_schema_compliance = "nextdep_dsp.validation.validate:app"
+nextdep_api_token = "nextdep_dsp.authorization.token:app"
 
 [tool.ty]
 # All rules are enabled as "error" by default; no need to specify unless overriding.
@@ -73,6 +80,8 @@ select = [
     "B",   # flake8-bugbear
     "UP",  # pyupgrade
 ]
+
+ignore = ["UP007"]
 
 [tool.coverage.run]
 branch = true
@@ -93,6 +102,11 @@ exclude_also = [
     "raise NotImplementedError",
     "\\.\\.\\.",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = ["--ignore=tests/authorization"]
 
 [tool.uv]
 package = true
