@@ -55,7 +55,7 @@ export ONEDEP_SSL_VERIFY="false"
 
 ## DSP API
 
-The DSP (Deposition Software Provider) API is the high-level interface for third-party suites (CCP4, Phenix, GlobalPhasing) to stage files locally, run pre-submission checks, and submit depositions to OneDep. It persists session state in a local SQLite database so workflows can be interrupted and resumed.
+The DSP (Deposition Software Provider) API is the high-level interface for third-party suites (CCP4, Phenix, GlobalPhasing) to stage files locally, run pre-submission checks, and submit depositions to OneDep. It persists session state in a local JSON file so workflows can be interrupted and resumed.
 
 ### New deposition
 
