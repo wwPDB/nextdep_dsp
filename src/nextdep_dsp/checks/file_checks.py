@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from collections import Counter
-from pathlib import Path
 
 from nextdep_dsp.checks.report import CheckIssue, CheckReport, CheckSeverity
 from nextdep_dsp.deposition.enum import ExperimentType, FileType
 from nextdep_dsp.session.models import LocalFile
 from nextdep_dsp.validation.support.filecompliance import FileCompliance
 
-_FILES_SCHEMA = str(Path(__file__).parent.parent / "validation" / "schema" / "files.json")
 _COORD_FILE_TYPES = {"co-pdb", "co-cif"}
 _STRUCTURE_FACTOR_FILE_TYPES = {"xs-cif", "xs-mtz"}
 _EC_DATA_FILE_TYPES = {"vo-map", "xs-cif", "xs-mtz"}
@@ -122,11 +120,11 @@ def check_required_files(
         )
 
     filetypes = [file.file_type.value for file in files]
-    compliance = FileCompliance(_FILES_SCHEMA)
+    compliance = FileCompliance()
     compliance.datafile = compliance.generate_data_file(
         experiment_type.value,
         filetypes,
-        em_subtype or "",
+        em_subtype,
     )
     result = compliance.validate()
 
