@@ -93,6 +93,8 @@ class FileCompliance(SchemaCompliance):
             subtype (str): subtype for em experiment
         Returns:
             str: path to generated json file
+        Raises:
+            ValueError: if parameters are invalid
         """
         if not self.verify_params(exptype, filetypes, subtype):
             raise ValueError("invalid parameters")
