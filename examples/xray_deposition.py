@@ -16,9 +16,19 @@ from __future__ import annotations
 import time
 
 import nextdep_dsp as dsp
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
-COORD_FILE = "/home/wbueno/repos/test_files/xray/2gc2.cif"
-SF_FILE = "/home/wbueno/repos/test_files/xray/2gc2-sf.cif"
+_console = Console(stderr=True)
+
+# ── Configuration ─────────────────────────────────────────────────────────────
+# Change all values marked with  <<<< CHANGE THIS  before running.
+
+EMAIL      = "your.email@example.com"   # <<<< CHANGE THIS
+USERS      = ["0000-0000-0000-0000"]    # <<<< CHANGE THIS  (ORCID iD)
+COORD_FILE = "/path/to/your/coord.cif"  # <<<< CHANGE THIS
+SF_FILE    = "/path/to/your/sf.cif"     # <<<< CHANGE THIS
 
 
 def print_report(label: str, report: dsp.CheckReport) -> None:
@@ -29,11 +39,30 @@ def print_report(label: str, report: dsp.CheckReport) -> None:
 
 
 def main() -> None:
+    # ── 0. Validate configuration ─────────────────────────────────────────────
+    _unset = [
+        name
+        for name, placeholder, value in [
+            ("EMAIL",      "your.email@example.com",   EMAIL),
+            ("USERS",      ["0000-0000-0000-0000"],    USERS),
+            ("COORD_FILE", "/path/to/your/coord.cif",  COORD_FILE),
+            ("SF_FILE",    "/path/to/your/sf.cif",     SF_FILE),
+        ]
+        if value == placeholder
+    ]
+    if _unset:
+        msg = Text()
+        msg.append("Placeholder values not changed:\n", style="bold yellow")
+        for name in _unset:
+            msg.append(f"  • {name}\n", style="yellow")
+        msg.append("\nEdit the constants at the top of this file before running.", style="dim")
+        _console.print(Panel(msg, title="[bold red]⚠  Configuration[/bold red]", border_style="red"))
+
     # ── 1. Initialization ────────────────────────────────────────────────────
     print("=== Deposit Initialization ===")
     dep = dsp.deposit_init(
-        email="wbueno@ebi.ac.uk",
-        users=["0000-0002-5109-8728"],
+        email=EMAIL,
+        users=USERS,
         country=dsp.Country.USA,
     )
     print(f"  session_id : {dep.session_id}")
