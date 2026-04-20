@@ -16,18 +16,24 @@ def inputs_pass():
 @pytest.fixture(scope="module")
 def inputs_fail():
     return [
-        ("xray", [], None),
         ("xray", ["co-cif"], None),
         ("xray", ["xs-cif"], None),
         ("xray", ["co-cif", "xs-cif", "co-cif"], None),
         ("xray", ["co-cif", "xs-cif", "xs-cif"], None),
-        ("em", [], "tomography"),
         ("em", ["vo-map"], "tomography"),
         ("em", ["img-emdb"], "tomography"),
         ("em", ["vo-map", "img-emdb"], "single"),
         ("em", ["vo-map", "img-emdb", "half-map"], "single"),
         ("em", ["vo-map", "img-emdb", "half-map", "half-map", "half-map"], "single"),
-        # ("em", ["vo-map", "img-emdb"], None)
+    ]
+
+
+@pytest.fixture(scope="module")
+def inputs_exception():
+    return [
+        ("xray", [], None),
+        ("em", [], "tomography"),
+        ("em", ["vo-map", "img-emdb"], None)
     ]
 
 
@@ -42,3 +48,10 @@ def test_required_files_fail(inputs_fail):
     for exptype, filetype, subtype in inputs_fail:
         assert not filec.inspect_params(exptype, filetype,
                                         subtype), f"Validation should fail for {exptype} {filetype} {subtype}"
+
+
+def test_required_files_exception(inputs_exception):
+    filec = FileCompliance()
+    for exptype, filetype, subtype in inputs_exception:
+        with pytest.raises(ValueError):
+            filec.inspect_params(exptype, filetype, subtype)
