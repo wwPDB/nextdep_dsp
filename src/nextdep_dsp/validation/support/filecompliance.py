@@ -70,6 +70,9 @@ class FileCompliance(SchemaCompliance):
         if exptype not in explist:
             logger.error("invalid experiment type")
             return False
+        if len(filetypes) == 0:
+            logger.error("filetypes list cannot be empty")
+            return False
         if not all(f in filelist for f in filetypes):
             logger.error("invalid file type")
             return False
