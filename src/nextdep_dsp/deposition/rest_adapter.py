@@ -8,7 +8,6 @@ import requests.packages
 
 from nextdep_dsp.deposition.exceptions import DepositApiException, InvalidDepositSiteException
 from nextdep_dsp.deposition.models import Response
-from nextdep_dsp.utils import upload_file_resumable
 
 
 class RestAdapter:
