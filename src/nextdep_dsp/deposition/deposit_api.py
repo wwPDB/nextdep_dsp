@@ -370,12 +370,9 @@ class DepositApi:
                 if file.file_type.value == file_type_str:
                     self.remove_file(dep_id, file.file_id)
 
-        baseurl = self._rest_adapter.url
         endpoint = f"depositions/{dep_id}/files/"
-        url = f"{baseurl}{endpoint}"
-        token = self._api_key
 
-        response = upload_file_resumable(url, data, file_path, token)
+        response = self._rest_adapter.repost(endpoint, data, file_path)
         if not response:
             raise DepositApiException("Error uploading file", 500)
         response.data["file_type"] = response.data.pop("type")

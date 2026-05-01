@@ -1,12 +1,13 @@
 import logging
 from json import JSONDecodeError
-from typing import Union
+from typing import Union, Optional
 
 import requests
 import requests.packages
 
 from nextdep_dsp.deposition.exceptions import DepositApiException, InvalidDepositSiteException
 from nextdep_dsp.deposition.models import Response
+from nextdep_dsp.utils import upload_file_resumable
 
 
 class RestAdapter:
@@ -160,6 +161,19 @@ class RestAdapter:
         return self._do(
             http_method="POST", endpoint=endpoint, params=params, data=data, files=files, content_type=content_type
         )
+
+    def repost(self, endpoint: str, data: dict, file_path: str) -> Optional[Response]:
+        """
+        Perform POST requests
+        Resumable with the same parameters as the last request
+        :param endpoint: endpoint path
+        :param data: dictionary with requests data
+        :param file_path: path to file to be uploaded
+        :return: API response
+        """
+        url = self.url + endpoint
+        response = upload_file_resumable(url, data, file_path, self._api_key)
+        return response
 
     def delete(
         self, endpoint: str, params: dict = None, data: dict = None, content_type: str = "application/json"

@@ -1,9 +1,10 @@
 import os
 import requests
+from typing import Optional
 from nextdep_dsp.deposition.models import Response
 
 
-def upload_file_resumable(url: str, data: dict, file_path: str, token: str, uploaded_bytes: int = 0) -> Response:
+def upload_file_resumable(url: str, data: dict, file_path: str, token: str, uploaded_bytes: int = 0) -> Optional[Response]:
 
     CHUNK_SIZE = 8 * 1024 * 1024
 
