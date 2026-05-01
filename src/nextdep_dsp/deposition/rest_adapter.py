@@ -205,6 +205,29 @@ class RestAdapter:
                     self._logger.error(msg=(str(e)))
                     raise DepositApiException("Failed to access the API", 403) from e
                 response.raise_for_status()
+
+                if response.status_code == 204:
+                    # Django is redirecting 204 to OneDep home page
+                    return Response(204)
+                is_success = 299 >= response.status_code >= 200
+                log_line_pre = f"method=POST, url={url}"
+                log_line_post = ", ".join((log_line_pre, "success={}, status_code={}, message={}"))
+                log_line = log_line_post.format(is_success, response.status_code, response.reason)
+                if not is_success:
+                    self._logger.error(msg=log_line)
+                    raise DepositApiException(response.reason, response.status_code)
+                try:
+                    data_out = response.json()
+                except (ValueError, JSONDecodeError) as e:
+                    self._logger.error(msg=log_line_post.format(False, None, e))
+                    raise DepositApiException("Bad JSON in response", 502) from e
+                self._logger.debug(msg=log_line)
+
+                if "extras" in data_out and "code" in data_out:
+                    if "invalid_location" in data_out["code"] and "base_url" in data_out["extras"]:
+                        self._logger.warning(msg=f"Invalid deposit site, expected is {data_out['extras']['base_url']}")
+                        raise InvalidDepositSiteException(data_out["extras"]["base_url"])
+
                 latest_response = response
                 uploaded_bytes = latest_response.json().get("uploadedBytes", chunk_end + 1)
                 print(f"Uploaded {uploaded_bytes}/{file_size} bytes")
