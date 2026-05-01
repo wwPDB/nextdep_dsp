@@ -17,7 +17,7 @@ from nextdep_dsp.deposition.models import (
     Experiment,
 )
 from nextdep_dsp.deposition.rest_adapter import RestAdapter
-
+from nextdep_dsp.utils import upload_file_resumable
 
 class DepositApi:
     """Deposit API wrapper"""
@@ -352,12 +352,10 @@ class DepositApi:
         :param overwrite: If true, overwrite all previously uploaded file with the same type
         :return: File response
         """
-        files = {}
-        file_type_str = file_type
-
         if not os.path.exists(file_path):
             raise DepositApiException("Invalid input file", 404)
 
+        file_type_str = file_type
         if isinstance(file_type, FileType):
             file_type_str = file_type.value
 
@@ -372,14 +370,19 @@ class DepositApi:
                 if file.file_type.value == file_type_str:
                     self.remove_file(dep_id, file.file_id)
 
-        with open(file_path, "rb") as fp:
-            files["file"] = (file_name, fp, mime_type)
+        baseurl = self._rest_adapter.url
+        endpoint = f"depositions/{dep_id}/files/"
+        url = f"{baseurl}{endpoint}"
+        token = self._api_key
 
-            response = self._rest_adapter.post(f"depositions/{dep_id}/files/", data=data, files=files, content_type="")
-            response.data["file_type"] = response.data.pop("type")
-            response.data["file_id"] = response.data.pop("id")
+        response = upload_file_resumable(url, data, file_path, token)
+        if not response:
+            raise DepositApiException("Error uploading file", 500)
+        response.data["file_type"] = response.data.pop("type")
+        response.data["file_id"] = response.data.pop("id")
+        response.data.pop("uploadedBytes")
 
-            return DepositedFile(**response.data)
+        return DepositedFile(**response.data)
 
     @handle_invalid_deposit_site
     def update_metadata(
