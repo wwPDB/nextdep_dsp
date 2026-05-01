@@ -1,6 +1,7 @@
 import logging
 from json import JSONDecodeError
 from typing import Union, Optional
+import os
 
 import requests
 import requests.packages
@@ -162,7 +163,7 @@ class RestAdapter:
             http_method="POST", endpoint=endpoint, params=params, data=data, files=files, content_type=content_type
         )
 
-    def repost(self, endpoint: str, data: dict, file_path: str) -> Optional[Response]:
+    def repost(self, endpoint: str, data: dict, file_path: str, uploaded_bytes:int = 0) -> Optional[Response]:
         """
         Perform POST requests
         Resumable with the same parameters as the last request
@@ -172,8 +173,43 @@ class RestAdapter:
         :return: API response
         """
         url = self.url + endpoint
-        response = upload_file_resumable(url, data, file_path, self._api_key)
-        return response
+        CHUNK_SIZE = 8 * 1024 * 1024
+        file_size = os.path.getsize(file_path)
+        file_name = os.path.basename(file_path)
+        if uploaded_bytes >= file_size:
+            raise ValueError("uploaded_bytes is already greater than or equal to file size")
+        latest_response = None
+        with open(file_path, "rb") as fp:
+            fp.seek(uploaded_bytes)
+            while uploaded_bytes < file_size:
+                chunk = fp.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                chunk_start = uploaded_bytes
+                chunk_end = chunk_start + len(chunk) - 1
+                chunk_headers = {
+                    "Content-Range": f"bytes {chunk_start}-{chunk_end}/{file_size}",
+                }
+                files = {
+                    "file": (file_name, chunk, "application/octet-stream"),
+                }
+                try:
+                    response = self._session.request(
+                        method="POST",
+                        url=url,
+                        headers=chunk_headers,
+                        data=data,
+                        files=files,
+                        timeout=self._timeout,
+                    )
+                except requests.exceptions.RequestException as e:
+                    self._logger.error(msg=(str(e)))
+                    raise DepositApiException("Failed to access the API", 403) from e
+                response.raise_for_status()
+                latest_response = response
+                uploaded_bytes = latest_response.json().get("uploadedBytes", chunk_end + 1)
+                print(f"Uploaded {uploaded_bytes}/{file_size} bytes")
+        return Response(latest_response.status_code, latest_response.reason, latest_response.json()) or None
 
     def delete(
         self, endpoint: str, params: dict = None, data: dict = None, content_type: str = "application/json"
