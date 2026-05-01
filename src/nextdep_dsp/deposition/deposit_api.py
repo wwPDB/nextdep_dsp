@@ -17,7 +17,7 @@ from nextdep_dsp.deposition.models import (
     Experiment,
 )
 from nextdep_dsp.deposition.rest_adapter import RestAdapter
-from nextdep_dsp.utils import upload_file_resumable
+
 
 class DepositApi:
     """Deposit API wrapper"""
