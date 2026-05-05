@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import os
+import warnings
 from typing import Union
 
 from nextdep_dsp.config import DepositConfig
@@ -209,6 +210,14 @@ class DepositApi:
         :param refln_only: Reflection data only?
         :return: Response
         """
+        sf_only = kwargs.pop("sf_only", None)
+        if sf_only is not None:
+            warnings.warn(
+                "create_ec_deposition(sf_only=...) is deprecated; use refln_only=... instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            refln_only = sf_only
         experiment = Experiment(exp_type="ec", related_emdb=related_emdb, coordinates=coordinates, refln_only=refln_only)
         deposit = self.create_deposition(
             email=email, users=users, country=country, experiments=[experiment], password=password

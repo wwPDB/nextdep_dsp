@@ -1,3 +1,4 @@
+import warnings
 from datetime import datetime
 from typing import Optional, Union
 
@@ -49,6 +50,8 @@ class Experiment:
         related_emdb: str = None,
         related_bmrb: str = None,
         refln_only: bool = False,
+        *,
+        sf_only: Optional[bool] = None,
     ):
         """
         Constructor for Experiment
@@ -58,7 +61,15 @@ class Experiment:
         :param related_emdb:
         :param related_bmrb:
         :param refln_only:
+        :param sf_only: Deprecated alias for refln_only; will be removed at v1.0.0.
         """
+        if sf_only is not None:
+            warnings.warn(
+                "Experiment(sf_only=...) is deprecated; use refln_only=... instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            refln_only = sf_only
         self._coordinates = bool(coordinates)
         self._type = None
         self._subtype = None
