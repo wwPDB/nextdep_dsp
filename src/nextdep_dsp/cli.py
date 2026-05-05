@@ -9,7 +9,6 @@ import typer
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.table import Table
-import functools
 import json
 import os
 import re
@@ -85,51 +84,48 @@ def sessions_list(
         )
 
     console.print(table)
-def sigma(func):
-    """Preprocess inputs for deposition creation"""
+def _validate_create_args(
+    exptype: str,
+    email: str,
+    user: list[str],
+    country: str,
+    subtype: Optional[str],
+    coords: Optional[bool],
+    related_id: Optional[str],
+    sf_only: Optional[bool],
+) -> None:
+    """Validate the arguments to the `create` command. Raises ValueError on failure.
 
-    @functools.wraps(func)
-    def s(*args, **kwargs):
-        exptype: str = kwargs.get("exptype")
-        email: str = kwargs.get("email")
-        user: list[str] = kwargs.get("user")
-        country: str = kwargs.get("country")
-        subtype: Optional[str] = kwargs.get("subtype")
-        coords: Optional[bool] = kwargs.get("coords")
-        related_id: Optional[str] = kwargs.get("related_id")
-        password: Optional[str] = kwargs.get("password")
-        sf_only: Optional[bool] = kwargs.get("sf_only")
-
-        v = verify_exp_type(exptype)
-        v &= verify_email(email)
-        if len(user) == 0:
-            raise ValueError("At least one user is required")
-        for u in user:
-            v &= verify_orcid(u)
-        v &= verify_country(country)
-        if exptype == "em":
-            if subtype is None:
-                raise ValueError("subtype is required for EM deposition")
-            if coords is None:
-                raise ValueError("coords/no-coords is required for EM deposition")
-            v &= verify_subtype(subtype)
-        elif exptype == "ec":
-            if sf_only is None:
-                raise ValueError("sf-only/no-sf-only is required for EC deposition")
-        if coords is not None and coords == False and exptype in ["xray", "fiber", "neutron"]:
-            raise ValueError("coordinates are required for xray, fiber, and neutron diffraction")
-        if sf_only is not None and exptype != "ec":
-            raise ValueError("sf-only is only valid for EC deposition")
-        if related_id is not None:
-            if exptype in ["em", "ec"]:
-                v &= verify_emdb_id(related_id)
-            elif exptype in ["nmr", "ssnmr"]:
-                v &= verify_bmrb_id(related_id)
-            else:
-                raise ValueError("related-id is only valid for EM, EC, NMR, or SS-NMR deposition")
-        v ^ func(*args, **kwargs)
-
-    return s
+    The verify_* helpers below raise ValueError on bad input; this function adds the
+    cross-field constraints (e.g. an EM deposition requires both subtype and coords).
+    """
+    verify_exp_type(exptype)
+    verify_email(email)
+    if not user:
+        raise ValueError("At least one user is required")
+    for u in user:
+        verify_orcid(u)
+    verify_country(country)
+    if exptype == "em":
+        if subtype is None:
+            raise ValueError("subtype is required for EM deposition")
+        if coords is None:
+            raise ValueError("coords/no-coords is required for EM deposition")
+        verify_subtype(subtype)
+    elif exptype == "ec":
+        if sf_only is None:
+            raise ValueError("sf-only/no-sf-only is required for EC deposition")
+    if coords is False and exptype in ("xray", "fiber", "neutron"):
+        raise ValueError("coordinates are required for xray, fiber, and neutron diffraction")
+    if sf_only is not None and exptype != "ec":
+        raise ValueError("sf-only is only valid for EC deposition")
+    if related_id is not None:
+        if exptype in ("em", "ec"):
+            verify_emdb_id(related_id)
+        elif exptype in ("nmr", "ssnmr"):
+            verify_bmrb_id(related_id)
+        else:
+            raise ValueError("related-id is only valid for EM, EC, NMR, or SS-NMR deposition")
 
 
 def verify_exp_type(exptype: str) -> bool:
@@ -223,7 +219,6 @@ def get_file_type_enum(file_type_string: str) -> FileType:
 
 
 @app.command()
-@sigma
 def create(
     exptype: str,
     email: str,
@@ -236,6 +231,7 @@ def create(
     sf_only: Optional[bool] = None,
 ) -> bool:
     """Create deposition"""
+    _validate_create_args(exptype, email, user, country, subtype, coords, related_id, sf_only)
     api = DepositApi()
     countryEnum = get_country_enum(country)
     if exptype == "xray":
