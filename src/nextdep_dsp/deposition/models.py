@@ -113,6 +113,11 @@ class Experiment:
             json_object["type"] = self._type.value
         if self.subtype:
             json_object["subtype"] = self._subtype.value
+        # Wire-format compatibility: the OneDep server (per upstream
+        # wwPDB/py-onedep_deposition) expects "sf_only" on the JSON wire.
+        # The Python kwarg was renamed to refln_only for clarity; map it here.
+        if "refln_only" in json_object:
+            json_object["sf_only"] = json_object.pop("refln_only")
         return json_object
 
 

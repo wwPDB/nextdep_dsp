@@ -274,6 +274,22 @@ class ModelBugRegressionTests(unittest.TestCase):
         self.assertEqual(len(file_set.errors), 0)
         self.assertEqual(len(file_set.warnings), 0)
 
+    def test_experiment_json_emits_sf_only_when_refln_only_true(self):
+        # Public API uses refln_only (clearer name); the OneDep server
+        # (per upstream wwPDB/py-onedep_deposition) expects sf_only on the
+        # JSON wire. Experiment.json() bridges the two.
+        wire = Experiment(exp_type="ec", coordinates=True, refln_only=True).json()
+        self.assertEqual(wire.get("sf_only"), True)
+        self.assertNotIn("refln_only", wire)
+
+    def test_experiment_json_emits_sf_only_when_refln_only_false(self):
+        # The dict-comprehension in Experiment.json() filters by `is not None`,
+        # not by truthiness — so refln_only=False survives and must still
+        # be remapped to sf_only=False on the wire.
+        wire = Experiment(exp_type="ec", coordinates=True, refln_only=False).json()
+        self.assertEqual(wire.get("sf_only"), False)
+        self.assertNotIn("refln_only", wire)
+
 
 if __name__ == "__main__":
     unittest.main()
