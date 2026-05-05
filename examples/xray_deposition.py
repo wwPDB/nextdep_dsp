@@ -31,7 +31,7 @@ _console = Console(stderr=True)
 EMAIL      = "your.email@example.com"   # <<<< CHANGE THIS
 USERS      = ["0000-0000-0000-0000"]    # <<<< CHANGE THIS  (ORCID iD)
 COORD_FILE = "/path/to/your/coord.cif"  # <<<< CHANGE THIS
-SF_FILE    = "/path/to/your/sf.cif"     # <<<< CHANGE THIS
+REFLN_FILE = "/path/to/your/sf.cif"     # <<<< CHANGE THIS
 
 
 def ok(msg: str) -> None:
@@ -59,7 +59,7 @@ def main() -> None:
             ("EMAIL",      "your.email@example.com",   EMAIL),
             ("USERS",      ["0000-0000-0000-0000"],    USERS),
             ("COORD_FILE", "/path/to/your/coord.cif",  COORD_FILE),
-            ("SF_FILE",    "/path/to/your/sf.cif",     SF_FILE),
+            ("REFLN_FILE", "/path/to/your/sf.cif",     REFLN_FILE),
         ]
         if value == placeholder
     ]
@@ -100,9 +100,9 @@ def main() -> None:
         coord_id = dep.add_file(COORD_FILE, dsp.FileType.MMCIF_COORD)
         ok(f"Added coord file  file_id={coord_id}  type={dsp.FileType.MMCIF_COORD.value}")
 
-        spin.update("[cyan]Adding structure factors file…[/cyan]")
-        sf_id = dep.add_file(SF_FILE, dsp.FileType.CRYSTAL_STRUC_FACTORS)
-        ok(f"Added SF file  file_id={sf_id}  type={dsp.FileType.CRYSTAL_STRUC_FACTORS.value}")
+        spin.update("[cyan]Adding reflection data file…[/cyan]")
+        refln_id = dep.add_file(REFLN_FILE, dsp.FileType.CRYSTAL_REFLN_CIF)
+        ok(f"Added reflection data file  file_id={refln_id}  type={dsp.FileType.CRYSTAL_REFLN_CIF.value}")
 
         # ── 6. File checks ────────────────────────────────────────────────────
         spin.update("[cyan]Running file checks…[/cyan]")
@@ -119,10 +119,10 @@ def main() -> None:
             "check_file_type (coord, MMCIF_COORD)",
             dep.check_file_type(coord_id, dsp.FileType.MMCIF_COORD),
         )
-        print_report("check_mmcif_file (sf)", dep.check_mmcif_file(sf_id))
+        print_report("check_mmcif_file (refln)", dep.check_mmcif_file(refln_id))
         print_report(
-            "check_file_type (sf, CRYSTAL_STRUC_FACTORS)",
-            dep.check_file_type(sf_id, dsp.FileType.CRYSTAL_STRUC_FACTORS),
+            "check_file_type (refln, CRYSTAL_REFLN_CIF)",
+            dep.check_file_type(refln_id, dsp.FileType.CRYSTAL_REFLN_CIF),
         )
 
         # ── 7. Post-add required files check ──────────────────────────────────

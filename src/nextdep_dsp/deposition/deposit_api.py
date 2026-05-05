@@ -195,7 +195,7 @@ class DepositApi:
         coordinates: bool,
         password: str = "",  # pylint: disable=unused-argument
         related_emdb: str = None,
-        sf_only: bool = False,
+        refln_only: bool = False,
         **kwargs,
     ) -> Deposit:
         """
@@ -206,10 +206,10 @@ class DepositApi:
         :param coordinates: Depositing coordinates file?
         :param password: Password
         :param related_emdb: Related EMDB id
-        :param sf_only: Structure factor only?
+        :param refln_only: Reflection data only?
         :return: Response
         """
-        experiment = Experiment(exp_type="ec", related_emdb=related_emdb, coordinates=coordinates, sf_only=sf_only)
+        experiment = Experiment(exp_type="ec", related_emdb=related_emdb, coordinates=coordinates, refln_only=refln_only)
         deposit = self.create_deposition(
             email=email, users=users, country=country, experiments=[experiment], password=password
         )

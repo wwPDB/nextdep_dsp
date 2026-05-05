@@ -14,7 +14,7 @@ def _make_file(file_type: FileType) -> LocalFile:
 
 
 def test_passes_for_valid_xray_set():
-    files = [_make_file(FileType.MMCIF_COORD), _make_file(FileType.CRYSTAL_MTZ)]
+    files = [_make_file(FileType.MMCIF_COORD), _make_file(FileType.CRYSTAL_REFLN_MTZ)]
     report = check_required_files(files, ExperimentType.XRAY)
     assert report.ok is True
     assert report.issues == []
@@ -28,7 +28,7 @@ def test_fatal_for_missing_required_files():
     assert len(fatal_issues) >= 1
     assert all(i.code == "REQ_FILES_MISSING" for i in fatal_issues)
     assert fatal_issues[0].message == (
-        "Missing required structure factors file: expected one of xs-cif or xs-mtz"
+        "Missing required reflection data file: expected one of xs-cif or xs-mtz"
     )
 
 

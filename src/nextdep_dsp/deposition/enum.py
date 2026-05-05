@@ -297,10 +297,10 @@ class FileType(enum.Enum):
     EM_ADDITIONAL_MAP = "add-map"
     EM_MASK = "mask-map"
     EM_HALF_MAP = "half-map"
-    CRYSTAL_STRUC_FACTORS = "xs-cif"
-    CRYSTAL_MTZ = "xs-mtz"
-    CRYSTAL_PARAMETER = "xa-par"
-    CRYSTAL_TOPOLOGY = "xa-top"
+    CRYSTAL_REFLN_CIF = "xs-cif"
+    CRYSTAL_REFLN_MTZ = "xs-mtz"
+    CRYSTAL_PARAMETER = "xa-par"   # X-PLOR support for crystal structures?
+    CRYSTAL_TOPOLOGY = "xa-top"    # X-PLOR support for crystal structures?
     VIRUS_MATRIX = "xa-mat"
     NMR_ACS = "nm-shi"
     NMR_RESTRAINT_AMBER = "nm-res-amb"

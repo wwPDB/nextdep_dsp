@@ -138,7 +138,7 @@ def test_get_all_files(tmp_path):
     store.create_session(session)
 
     store.add_file(LocalFile("f1", "sess-1", "/a.cif", FileType.MMCIF_COORD))
-    store.add_file(LocalFile("f2", "sess-1", "/b.mtz", FileType.CRYSTAL_MTZ))
+    store.add_file(LocalFile("f2", "sess-1", "/b.mtz", FileType.CRYSTAL_REFLN_MTZ))
     files = store.get_all_files()
     assert len(files) == 2
     assert {f.file_id for f in files} == {"f1", "f2"}
