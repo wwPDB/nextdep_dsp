@@ -275,5 +275,54 @@ class ModelBugRegressionTests(unittest.TestCase):
         self.assertEqual(len(file_set.warnings), 0)
 
 
+class CountryDeprecationAliasTests(unittest.TestCase):
+    """Backward-compat for the v0.1.0 → v0.2.0 Country identifier rename.
+
+    Three Python identifiers were renamed to clean ASCII forms; the wire-format
+    value strings (which match the wwPDB OneDep deposit form's enumeration list)
+    are unchanged.
+    """
+
+    def test_curacao_alias(self):
+        with self.assertWarns(DeprecationWarning):
+            got = Country.CURAAAO  # noqa: PLW2901  - old name
+        self.assertIs(got, Country.CURACAO)
+        self.assertEqual(got.value, "CuraAao")
+
+    def test_reunion_alias(self):
+        with self.assertWarns(DeprecationWarning):
+            got = Country.RAUNION  # noqa: PLW2901  - old name
+        self.assertIs(got, Country.REUNION)
+        self.assertEqual(got.value, "RAunion")
+
+    def test_saint_barthelemy_alias(self):
+        with self.assertWarns(DeprecationWarning):
+            got = Country.SAINT_BARTHALEMY  # noqa: PLW2901  - old name
+        self.assertIs(got, Country.SAINT_BARTHELEMY)
+        self.assertEqual(got.value, "Saint BarthAlemy")
+
+    def test_country_unknown_name_still_attribute_errors(self):
+        # The metaclass __getattr__ must not swallow real typos.
+        with self.assertRaises(AttributeError):
+            _ = Country.NOT_A_REAL_COUNTRY
+
+    def test_country_iteration_excludes_deprecated_aliases(self):
+        # Old names are NOT enum members; iteration sees only the canonical set.
+        names = {m.name for m in Country}
+        self.assertIn("CURACAO", names)
+        self.assertIn("REUNION", names)
+        self.assertIn("SAINT_BARTHELEMY", names)
+        self.assertNotIn("CURAAAO", names)
+        self.assertNotIn("RAUNION", names)
+        self.assertNotIn("SAINT_BARTHALEMY", names)
+
+    def test_country_value_lookup_unchanged(self):
+        # The wire-format strings round-trip — Country("CuraAao") must still
+        # resolve to the (now-renamed) CURACAO member without any warning.
+        self.assertIs(Country("CuraAao"), Country.CURACAO)
+        self.assertIs(Country("RAunion"), Country.REUNION)
+        self.assertIs(Country("Saint BarthAlemy"), Country.SAINT_BARTHELEMY)
+
+
 if __name__ == "__main__":
     unittest.main()

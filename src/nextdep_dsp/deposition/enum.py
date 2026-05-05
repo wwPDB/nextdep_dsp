@@ -1,4 +1,28 @@
 import enum
+import warnings
+
+# Deprecation aliases for Country entries renamed in v0.2.0 to use clean ASCII
+# Python identifiers. The wire-format value strings are unchanged. Old names
+# emit DeprecationWarning when accessed and resolve to the corresponding new
+# member; removed at v1.0.0.
+_DEPRECATED_COUNTRY_NAMES = {
+    "CURAAAO": "CURACAO",
+    "RAUNION": "REUNION",
+    "SAINT_BARTHALEMY": "SAINT_BARTHELEMY",
+}
+
+
+class _DeprecatingCountryMeta(enum.EnumMeta):
+    def __getattr__(cls, name):
+        if name in _DEPRECATED_COUNTRY_NAMES:
+            new_name = _DEPRECATED_COUNTRY_NAMES[name]
+            warnings.warn(
+                f"Country.{name} is deprecated; use Country.{new_name} instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return cls[new_name]
+        raise AttributeError(f"type object {cls.__name__!r} has no attribute {name!r}")
 
 
 class Status(enum.Enum):
@@ -36,7 +60,16 @@ class EMSubType(enum.Enum):
     TOMOGRAPHY = "tomography"
 
 
-class Country(enum.Enum):
+# Four entries below have value strings that look like ASCII-mangled
+# diacritics — "CuraAao", "CAte D'Ivoire", "RAunion", "Saint BarthAlemy".
+# These are NOT typos: they are the canonical strings the wwPDB OneDep
+# deposit form uses for those countries (see py-wwpdb_apps_deposit's
+# scripts/add-county-list.py). Changing the value strings to proper
+# Unicode here would risk server-side validation rejection. The Python
+# identifiers (CURACAO, IVORY_COAST, REUNION, SAINT_BARTHELEMY) are
+# clean ASCII; the v0.1.0 identifiers (CURAAAO, RAUNION, SAINT_BARTHALEMY)
+# remain as deprecation aliases until v1.0.0.
+class Country(enum.Enum, metaclass=_DeprecatingCountryMeta):
     AFGHANISTAN = "Afghanistan"
     ALAND = "Aland Islands"
     ALBANIA = "Albania"
@@ -91,7 +124,7 @@ class Country(enum.Enum):
     COSTA_RICA = "Costa Rica"
     CROATIA = "Croatia"
     CUBA = "Cuba"
-    CURAAAO = "CuraAao"
+    CURACAO = "CuraAao"
     CYPRUS = "Cyprus"
     CZECH_REPUBLIC = "Czech Republic"
     DENMARK = "Denmark"
@@ -214,11 +247,11 @@ class Country(enum.Enum):
     PORTUGAL = "Portugal"
     PUERTO_RICO = "Puerto Rico"
     QATAR = "Qatar"
-    RAUNION = "RAunion"
+    REUNION = "RAunion"
     ROMANIA = "Romania"
     RUSSIA = "Russian Federation"
     RWANDA = "Rwanda"
-    SAINT_BARTHALEMY = "Saint BarthAlemy"
+    SAINT_BARTHELEMY = "Saint BarthAlemy"
     SAINT_HELENA = "Saint Helena, Ascension And Tristan Da Cunha"
     SAINT_KITTS = "Saint Kitts And Nevis"
     SAINT_LUCIA = "Saint Lucia"
