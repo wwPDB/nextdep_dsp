@@ -2,10 +2,8 @@ import logging
 from json import JSONDecodeError
 from typing import Union, Optional
 import os
-
 import requests
 import requests.packages
-
 from nextdep_dsp.deposition.exceptions import DepositApiException, InvalidDepositSiteException
 from nextdep_dsp.deposition.models import Response
 
@@ -169,6 +167,7 @@ class RestAdapter:
         :param endpoint: endpoint path
         :param data: dictionary with requests data
         :param file_path: path to file to be uploaded
+        :param uploaded_bytes: number of bytes already uploaded
         :return: API response
         """
         url = self.url + endpoint
@@ -205,7 +204,6 @@ class RestAdapter:
                     self._logger.error(msg=(str(e)))
                     raise DepositApiException("Failed to access the API", 403) from e
                 response.raise_for_status()
-
                 if response.status_code == 204:
                     # Django is redirecting 204 to OneDep home page
                     return Response(204)
@@ -222,15 +220,16 @@ class RestAdapter:
                     self._logger.error(msg=log_line_post.format(False, None, e))
                     raise DepositApiException("Bad JSON in response", 502) from e
                 self._logger.debug(msg=log_line)
-
                 if "extras" in data_out and "code" in data_out:
                     if "invalid_location" in data_out["code"] and "base_url" in data_out["extras"]:
                         self._logger.warning(msg=f"Invalid deposit site, expected is {data_out['extras']['base_url']}")
                         raise InvalidDepositSiteException(data_out["extras"]["base_url"])
-
                 latest_response = response
                 uploaded_bytes = latest_response.json().get("uploadedBytes", chunk_end + 1)
                 print(f"Uploaded {uploaded_bytes}/{file_size} bytes")
+        if not latest_response:
+            self._logger.error(msg=f"No response from {url}")
+            return None
         return Response(latest_response.status_code, latest_response.reason, latest_response.json()) or None
 
     def delete(
