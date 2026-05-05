@@ -196,6 +196,33 @@ export ONEDEP_HOSTNAME="https://onedep-depui-test.wwpdb.org/deposition"
 export ONEDEP_SSL_VERIFY="false"
 ```
 
+#### A note on test-endpoint routing
+
+The wwPDB routes incoming depositions to one of three deposit sites
+(RCSB, PDBe, PDBj) based on the depositor's country, ORCID, and
+similar metadata. The `onedep-depui-test.wwpdb.org` endpoint above is
+the **RCSB-side test cluster** — it accepts only depositions that the
+routing rules send to RCSB.
+
+If your live affiliation routes you to PDBe or PDBj, `nextdep_dsp
+create` against this endpoint will fail with an `invalid_location`
+error pointing at the corresponding production deposit site. Two
+paths forward:
+
+1. Use `country = "United States"` for the duration of the test. The
+   routing decision is made on the country field, so this lands the
+   deposition on the RCSB test cluster. Restore your real country
+   before any real submission.
+2. Coordinate with your wwPDB site contact about whether a PDBe or
+   PDBj test endpoint is available, and if so, point `hostname` in
+   the config file to it.
+
+The `redirect = true` flag in the config example above attempts to
+follow such routing suggestions automatically, but the suggested
+target is normally a production endpoint. While testing, prefer
+`redirect = false` so a routing rejection surfaces as a clear error
+instead of being silently re-routed to production.
+
 ### 3. Pre-flight check (schema-level)
 
 Before talking to the server, confirm that the file types you intend to
