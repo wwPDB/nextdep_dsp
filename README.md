@@ -267,9 +267,9 @@ Re-run as desired. Processing typically takes seconds to a few minutes.
 A few helpers for after the fact:
 
 ```bash
-nextdep_dsp get_deposition D_8000000123      # full deposition record
-nextdep_dsp get_files      D_8000000123      # listing of uploaded files
-nextdep_dsp get_users      D_8000000123      # access list
+nextdep_dsp get-deposition D_8000000123      # full deposition record
+nextdep_dsp get-files      D_8000000123      # listing of uploaded files
+nextdep_dsp get-users      D_8000000123      # access list
 ```
 
 ### What the CLI does NOT cover
