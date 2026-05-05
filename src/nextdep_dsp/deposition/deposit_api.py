@@ -342,7 +342,7 @@ class DepositApi:
 
     @handle_invalid_deposit_site
     def upload_file(
-        self, dep_id: str, file_path: str, file_type: Union[str, FileType], overwrite: bool = False
+        self, dep_id: str, file_path: str, file_type: Union[str, FileType], overwrite: bool = False, uploaded_bytes: int = 0
     ) -> DepositedFile:
         """
         Upload a file in a deposition
@@ -350,6 +350,7 @@ class DepositApi:
         :param file_path: File path
         :param file_type: Deposition file type
         :param overwrite: If true, overwrite all previously uploaded file with the same type
+        :param uploaded_bytes: Number of bytes already uploaded
         :return: File response
         """
         if not os.path.exists(file_path):
@@ -372,7 +373,7 @@ class DepositApi:
 
         endpoint = f"depositions/{dep_id}/files/"
 
-        response = self._rest_adapter.repost(endpoint, data, file_path)
+        response = self._rest_adapter.repost(endpoint, data, file_path, uploaded_bytes)
         if not response:
             raise DepositApiException("Error uploading file", 500)
         response.data["file_type"] = response.data.pop("type")
