@@ -177,6 +177,7 @@ class RestAdapter:
         if uploaded_bytes >= file_size:
             raise ValueError("uploaded_bytes is already greater than or equal to file size")
         latest_response = None
+        self._logger.info(f"Uploading {file_name}")
         with open(file_path, "rb") as fp:
             fp.seek(uploaded_bytes)
             while uploaded_bytes < file_size:
@@ -226,7 +227,7 @@ class RestAdapter:
                         raise InvalidDepositSiteException(data_out["extras"]["base_url"])
                 latest_response = response
                 uploaded_bytes = latest_response.json().get("uploadedBytes", chunk_end + 1)
-                print(f"Uploaded {uploaded_bytes}/{file_size} bytes")
+                self._logger.info(f"Uploaded {uploaded_bytes}/{file_size} bytes")
         if not latest_response:
             self._logger.error(msg=f"No response from {url}")
             return None
