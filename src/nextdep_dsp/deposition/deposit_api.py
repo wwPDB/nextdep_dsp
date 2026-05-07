@@ -378,8 +378,6 @@ class DepositApi:
             raise DepositApiException("Error uploading file", 500)
         response.data["file_type"] = response.data.pop("type")
         response.data["file_id"] = response.data.pop("id")
-        if "uploadedBytes" in response.data:
-            response.data.pop("uploadedBytes")
 
         return DepositedFile(**response.data)
 
