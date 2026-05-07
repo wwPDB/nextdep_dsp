@@ -71,14 +71,56 @@
     "files"
   ],
   "allOf": [
+        {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "xray"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "files": {
+            "allOf": [
+              {
+                "contains": {
+                  "const": "co-cif"
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "enum": [
+                    "xs-cif",
+                    "xs-mtz"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            ],
+            "items": {
+              "enum": [
+                "co-pdb",
+                "co-cif",
+                "xs-cif",
+                "xs-mtz",
+                "xa-par",
+                "xa-top",
+                "xa-mat"
+              ]
+            }
+          }
+        }
+      }
+    },
     {
       "if": {
         "properties": {
           "method": {
-            "enum": [
-              "xray",
-              "neutron"
-            ]
+            "const": "neutron"
           }
         }
       },

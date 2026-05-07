@@ -204,6 +204,15 @@ def test_check_auth_key_returns_false_on_exception(tmp_path):
 
 def test_check_required_files_returns_check_report(tmp_path):
     dep = _make_deposition(tmp_path)
+
+    cif = tmp_path / "model.cif"
+    cif.write_text("data\n")
+    dep.add_file(str(cif), FileType.MMCIF_COORD)
+
+    extra = tmp_path / "extra.cif"
+    extra.write_text("data\n")
+    dep.add_file(str(extra), FileType.CRYSTAL_STRUC_FACTORS)
+
     result = dep.check_required_files()
     assert isinstance(result, CheckReport)
 
