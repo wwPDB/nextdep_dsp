@@ -98,7 +98,7 @@ def sigma(func):
         coords: Optional[bool] = kwargs.get("coords")
         related_id: Optional[str] = kwargs.get("related_id")
         password: Optional[str] = kwargs.get("password")
-        sf_only: Optional[bool] = kwargs.get("sf_only")
+        refln_only: Optional[bool] = kwargs.get("refln_only")
 
         v = verify_exp_type(exptype)
         v &= verify_email(email)
@@ -114,12 +114,12 @@ def sigma(func):
                 raise ValueError("coords/no-coords is required for EM deposition")
             v &= verify_subtype(subtype)
         elif exptype == "ec":
-            if sf_only is None:
-                raise ValueError("sf-only/no-sf-only is required for EC deposition")
+            if refln_only is None:
+                raise ValueError("refln-only/no-refln-only is required for EC deposition")
         if coords is not None and coords == False and exptype in ["xray", "fiber", "neutron"]:
             raise ValueError("coordinates are required for xray, fiber, and neutron diffraction")
-        if sf_only is not None and exptype != "ec":
-            raise ValueError("sf-only is only valid for EC deposition")
+        if refln_only is not None and exptype != "ec":
+            raise ValueError("refln-only is only valid for EC deposition")
         if related_id is not None:
             if exptype in ["em", "ec"]:
                 v &= verify_emdb_id(related_id)
@@ -233,7 +233,7 @@ def create(
     coords: Optional[bool] = None,
     related_id: Optional[str] = None,
     password: Optional[str] = None,
-    sf_only: Optional[bool] = None,
+    refln_only: Optional[bool] = None,
 ) -> bool:
     """Create deposition"""
     api = DepositApi()
@@ -276,7 +276,7 @@ def create(
             country=countryEnum,
             password=password,
             coordinates=coords,
-            sf_only=sf_only,
+            refln_only=refln_only,
             related_emdb=related_id,
         )
     elif exptype == "fiber":

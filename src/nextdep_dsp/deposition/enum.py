@@ -1,4 +1,26 @@
 import enum
+import warnings
+
+# Deprecation aliases: old FileType member names retained for v0.1.0
+# callers. Accessing them emits DeprecationWarning and resolves to the
+# corresponding new member. Removed at v1.0.0.
+_DEPRECATED_FILETYPE_NAMES = {
+    "CRYSTAL_STRUC_FACTORS": "CRYSTAL_REFLN_CIF",
+    "CRYSTAL_MTZ": "CRYSTAL_REFLN_MTZ",
+}
+
+
+class _DeprecatingFileTypeMeta(enum.EnumMeta):
+    def __getattr__(cls, name):
+        if name in _DEPRECATED_FILETYPE_NAMES:
+            new_name = _DEPRECATED_FILETYPE_NAMES[name]
+            warnings.warn(
+                f"FileType.{name} is deprecated; use FileType.{new_name} instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return cls[new_name]
+        raise AttributeError(f"type object {cls.__name__!r} has no attribute {name!r}")
 
 
 class Status(enum.Enum):
@@ -287,7 +309,7 @@ class Country(enum.Enum):
     ZIMBABWE = "Zimbabwe"
 
 
-class FileType(enum.Enum):
+class FileType(enum.Enum, metaclass=_DeprecatingFileTypeMeta):
     LAYER = "layer-lines"
     FSC_XML = "fsc-xml"
     PDB_COORD = "co-pdb"
@@ -297,10 +319,10 @@ class FileType(enum.Enum):
     EM_ADDITIONAL_MAP = "add-map"
     EM_MASK = "mask-map"
     EM_HALF_MAP = "half-map"
-    CRYSTAL_STRUC_FACTORS = "xs-cif"
-    CRYSTAL_MTZ = "xs-mtz"
-    CRYSTAL_PARAMETER = "xa-par"
-    CRYSTAL_TOPOLOGY = "xa-top"
+    CRYSTAL_REFLN_CIF = "xs-cif"
+    CRYSTAL_REFLN_MTZ = "xs-mtz"
+    CRYSTAL_PARAMETER = "xa-par"   # X-PLOR support for crystal structures?
+    CRYSTAL_TOPOLOGY = "xa-top"    # X-PLOR support for crystal structures?
     VIRUS_MATRIX = "xa-mat"
     NMR_ACS = "nm-shi"
     NMR_RESTRAINT_AMBER = "nm-res-amb"

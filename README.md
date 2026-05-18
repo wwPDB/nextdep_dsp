@@ -71,7 +71,7 @@ with dsp.deposit_init(
     print(dep.session_id)           # save this to resume later
 
     coord_id = dep.add_file("model.cif",   dsp.FileType.MMCIF_COORD)
-    sf_id    = dep.add_file("data-sf.cif", dsp.FileType.CRYSTAL_STRUC_FACTORS)
+    refln_id = dep.add_file("data-sf.cif", dsp.FileType.CRYSTAL_REFLN_CIF)
 
     report = dep.check_required_files()
     if not report.ok:
@@ -117,7 +117,7 @@ Sessions are identified by a UUID printed at creation time. Pass it to `deposit_
 ```python
 dep = dsp.deposit_resume("your-session-uuid")
 
-dep.add_file("extra.cif", dsp.FileType.CRYSTAL_STRUC_FACTORS)
+dep.add_file("extra.cif", dsp.FileType.CRYSTAL_REFLN_CIF)
 dep.deposit()   # reuses the existing remote deposition if already submitted
 ```
 

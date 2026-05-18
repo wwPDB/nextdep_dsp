@@ -412,7 +412,7 @@ def test_deposit_skips_create_if_remote_dep_id_set(tmp_path):
 
     extra = tmp_path / "extra.cif"
     extra.write_text("data\n")
-    dep.add_file(str(extra), FileType.CRYSTAL_STRUC_FACTORS)
+    dep.add_file(str(extra), FileType.CRYSTAL_REFLN_CIF)
 
     with patch("nextdep_dsp.dsp.DepositApi") as mock_cls:
         mock_api = MagicMock()
@@ -441,7 +441,7 @@ def test_deposit_resubmit_uploads_all_files(tmp_path):
 
     extra = tmp_path / "extra.cif"
     extra.write_text("data\n")
-    dep.add_file(str(extra), FileType.CRYSTAL_STRUC_FACTORS)
+    dep.add_file(str(extra), FileType.CRYSTAL_REFLN_CIF)
 
     with patch("nextdep_dsp.dsp.DepositApi") as mock_cls:
         mock_api = MagicMock()

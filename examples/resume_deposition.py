@@ -51,7 +51,7 @@ def main(session_id: str) -> None:
     # ── 3. Add a new file ─────────────────────────────────────────────────────
     print("\n=== Adding Extra File ===")
     try:
-        # file_id = dep.add_file(EXTRA_FILE, dsp.FileType.CRYSTAL_STRUC_FACTORS)
+        # file_id = dep.add_file(EXTRA_FILE, dsp.FileType.CRYSTAL_REFLN_CIF)
         file_id = dep.add_file(EXTRA_FILE, dsp.FileType.MMCIF_COORD)
         print(f"  added file_id={file_id}  path={EXTRA_FILE}")
     except FileNotFoundError as exc:

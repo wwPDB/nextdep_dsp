@@ -52,7 +52,7 @@ def test_check_file_type_returns_check_report():
 
 
 def test_check_required_files_returns_check_report():
-    files = [_make_file(FileType.MMCIF_COORD), _make_file(FileType.CRYSTAL_MTZ)]
+    files = [_make_file(FileType.MMCIF_COORD), _make_file(FileType.CRYSTAL_REFLN_MTZ)]
     result = check_required_files(files, ExperimentType.XRAY)
     assert isinstance(result, CheckReport)
     assert result.source == "session"

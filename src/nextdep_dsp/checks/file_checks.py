@@ -8,7 +8,7 @@ from nextdep_dsp.session.models import LocalFile
 from nextdep_dsp.validation.support.filecompliance import FileCompliance
 
 _COORD_FILE_TYPES = {"co-pdb", "co-cif"}
-_STRUCTURE_FACTOR_FILE_TYPES = {"xs-cif", "xs-mtz"}
+_REFLN_FILE_TYPES = {"xs-cif", "xs-mtz"}
 _EC_DATA_FILE_TYPES = {"vo-map", "xs-cif", "xs-mtz"}
 _NMR_UNIFIED_FILE_TYPES = {"nm-uni-nef", "nm-uni-str"}
 _NMR_RESTRAINT_FILE_TYPES = {
@@ -62,9 +62,9 @@ def _missing_required_file_messages(
         messages.append("Missing required coordinate file: expected one of co-pdb or co-cif")
 
     if experiment_type in {ExperimentType.XRAY, ExperimentType.NEUTRON}:
-        if not present.intersection(_STRUCTURE_FACTOR_FILE_TYPES):
+        if not present.intersection(_REFLN_FILE_TYPES):
             messages.append(
-                "Missing required structure factors file: expected one of xs-cif or xs-mtz"
+                "Missing required reflection data file: expected one of xs-cif or xs-mtz"
             )
 
     if experiment_type == ExperimentType.FIBER and "layer-lines" not in present:

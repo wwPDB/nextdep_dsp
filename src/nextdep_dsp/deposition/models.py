@@ -1,3 +1,4 @@
+import warnings
 from datetime import datetime
 from typing import Optional, Union
 
@@ -48,7 +49,9 @@ class Experiment:
         subtype: Union[EMSubType, str] = None,
         related_emdb: str = None,
         related_bmrb: str = None,
-        sf_only: bool = False,
+        refln_only: bool = False,
+        *,
+        sf_only: Optional[bool] = None,
     ):
         """
         Constructor for Experiment
@@ -57,14 +60,22 @@ class Experiment:
         :param subtype:
         :param related_emdb:
         :param related_bmrb:
-        :param sf_only:
+        :param refln_only:
+        :param sf_only: Deprecated alias for refln_only; will be removed at v1.0.0.
         """
+        if sf_only is not None:
+            warnings.warn(
+                "Experiment(sf_only=...) is deprecated; use refln_only=... instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            refln_only = sf_only
         self._coordinates = bool(coordinates)
         self._type = None
         self._subtype = None
         self._related_emdb = str(related_emdb) if related_emdb is not None else None
         self._related_bmrb = str(related_bmrb) if related_bmrb is not None else None
-        self._sf_only = bool(sf_only)
+        self._refln_only = bool(refln_only)
 
         if isinstance(exp_type, ExperimentType):
             self._type = exp_type
@@ -113,6 +124,11 @@ class Experiment:
             json_object["type"] = self._type.value
         if self.subtype:
             json_object["subtype"] = self._subtype.value
+        # Wire-format compatibility: the OneDep server (per upstream
+        # wwPDB/py-onedep_deposition) expects "sf_only" on the JSON wire.
+        # The Python kwarg was renamed to refln_only for clarity; map it here.
+        if "refln_only" in json_object:
+            json_object["sf_only"] = json_object.pop("refln_only")
         return json_object
 
 

@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 import unittest
+import warnings
 from unittest.mock import Mock
 
 from nextdep_dsp.deposition.deposit_api import DepositApi
@@ -273,6 +274,99 @@ class ModelBugRegressionTests(unittest.TestCase):
         file_set = DepositedFilesSet(files=[], errors=None, warnings=None)
         self.assertEqual(len(file_set.errors), 0)
         self.assertEqual(len(file_set.warnings), 0)
+
+    def test_experiment_json_emits_sf_only_when_refln_only_true(self):
+        # Public API uses refln_only (clearer name); the OneDep server
+        # (per upstream wwPDB/py-onedep_deposition) expects sf_only on the
+        # JSON wire. Experiment.json() bridges the two.
+        wire = Experiment(exp_type="ec", coordinates=True, refln_only=True).json()
+        self.assertEqual(wire.get("sf_only"), True)
+        self.assertNotIn("refln_only", wire)
+
+    def test_experiment_json_emits_sf_only_when_refln_only_false(self):
+        # The dict-comprehension in Experiment.json() filters by `is not None`,
+        # not by truthiness — so refln_only=False survives and must still
+        # be remapped to sf_only=False on the wire.
+        wire = Experiment(exp_type="ec", coordinates=True, refln_only=False).json()
+        self.assertEqual(wire.get("sf_only"), False)
+        self.assertNotIn("refln_only", wire)
+
+
+class DeprecationAliasTests(unittest.TestCase):
+    """Backward-compat for the v0.1.0 → v0.2.0 'structure factor' → 'reflection data' rename."""
+
+    def test_filetype_struc_factors_alias(self):
+        with self.assertWarns(DeprecationWarning):
+            got = FileType.CRYSTAL_STRUC_FACTORS  # noqa: PLW2901  - old name
+        self.assertIs(got, FileType.CRYSTAL_REFLN_CIF)
+
+    def test_filetype_mtz_alias(self):
+        with self.assertWarns(DeprecationWarning):
+            got = FileType.CRYSTAL_MTZ  # noqa: PLW2901  - old name
+        self.assertIs(got, FileType.CRYSTAL_REFLN_MTZ)
+
+    def test_filetype_unknown_name_still_attribute_errors(self):
+        # The metaclass __getattr__ must not swallow real typos.
+        with self.assertRaises(AttributeError):
+            _ = FileType.CRYSTAL_NONEXISTENT_NAME
+
+    def test_filetype_iteration_excludes_deprecated_aliases(self):
+        # Old names are NOT enum members; iteration sees only the canonical set.
+        names = {m.name for m in FileType}
+        self.assertIn("CRYSTAL_REFLN_CIF", names)
+        self.assertIn("CRYSTAL_REFLN_MTZ", names)
+        self.assertNotIn("CRYSTAL_STRUC_FACTORS", names)
+        self.assertNotIn("CRYSTAL_MTZ", names)
+
+    def test_experiment_sf_only_kwarg_alias(self):
+        with self.assertWarns(DeprecationWarning):
+            exp = Experiment(exp_type="ec", coordinates=True, sf_only=True)
+        # Forwarded to refln_only and emitted on the wire as sf_only.
+        wire = exp.json()
+        self.assertEqual(wire.get("sf_only"), True)
+        self.assertNotIn("refln_only", wire)
+
+    def test_experiment_sf_only_false_does_not_warn(self):
+        # sf_only=None (omitted) is the no-op default; only an explicit value
+        # triggers the deprecation path.
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            Experiment(exp_type="ec", coordinates=True)
+        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        self.assertEqual(deprecations, [])
+
+    def test_create_ec_deposition_sf_only_kwarg_alias(self):
+        api = MyDepositApi()
+        api.rest_adapter.post = Mock(
+            return_value=Mock(
+                status_code=200,
+                data={
+                    "id": "D_8233000014",
+                    "email": "test@example.org",
+                    "pdb_id": "?", "emdb_id": "?", "bmrb_id": "?",
+                    "title": "?", "hold_exp_date": None,
+                    "created": "2026-01-01T00:00:00",
+                    "last_login": "2026-01-01T00:00:00",
+                    "site": "PDBe", "status": "DEP", "site_url": "https://example.org",
+                    "experiments": [{"type": "ec", "coordinates": True, "sf_only": True}],
+                    "errors": [],
+                },
+            )
+        )
+        with self.assertWarns(DeprecationWarning):
+            deposit = api.create_ec_deposition(
+                email="test@example.org",
+                users=["0000-0001-2345-6789"],
+                country=Country.UK,
+                coordinates=True,
+                sf_only=True,
+            )
+        # Verify the wire payload sent to the server still uses sf_only:True.
+        call_kwargs = api.rest_adapter.post.call_args.kwargs
+        sent_experiments = call_kwargs["data"]["experiments"]
+        self.assertEqual(sent_experiments[0]["sf_only"], True)
+        self.assertNotIn("refln_only", sent_experiments[0])
+        self.assertEqual(deposit.dep_id, "D_8233000014")
 
 
 if __name__ == "__main__":
