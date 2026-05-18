@@ -6,7 +6,6 @@ from nextdep_dsp.validation.support.filecompliance import FileCompliance
 def inputs_pass():
     return [
         ("xray", ["co-cif", "xs-cif"], None),
-        ("xray", ["co-pdb", "xs-mtz"], None),
         ("xray", ["co-cif", "xs-cif", "xa-top", "xa-mat", "xa-par"], None),
         ("em", ["vo-map", "img-emdb"], "tomography"),
         ("em", ["vo-map", "img-emdb", "half-map", "half-map"], "single"),
@@ -18,6 +17,7 @@ def inputs_fail():
     return [
         ("xray", ["co-cif"], None),
         ("xray", ["xs-cif"], None),
+        ("xray", ["co-pdb", "xs-mtz"], None),
         ("xray", ["co-cif", "xs-cif", "co-cif"], None),
         ("xray", ["co-cif", "xs-cif", "xs-cif"], None),
         ("em", ["vo-map"], "tomography"),

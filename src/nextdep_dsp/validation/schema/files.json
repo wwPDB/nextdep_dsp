@@ -75,10 +75,51 @@
       "if": {
         "properties": {
           "method": {
-            "enum": [
-              "xray",
-              "neutron"
-            ]
+            "const": "xray"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "files": {
+            "allOf": [
+              {
+                "contains": {
+                  "const": "co-cif"
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "enum": [
+                    "xs-cif",
+                    "xs-mtz"
+                  ]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            ],
+            "items": {
+              "enum": [
+                "co-cif",
+                "xs-cif",
+                "xs-mtz",
+                "xa-par",
+                "xa-top",
+                "xa-mat"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "method": {
+            "const": "neutron"
           }
         }
       },
