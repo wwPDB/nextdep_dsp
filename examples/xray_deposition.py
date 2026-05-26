@@ -33,7 +33,7 @@ def main() -> None:
     print("=== Deposit Initialization ===")
     dep = dsp.deposit_init(
         email="wbueno@ebi.ac.uk",
-        users=["0000-0002-5109-8728"],
+        users=["0000-0003-1862-4770"],
         country=dsp.Country.USA,
     )
     print(f"  session_id : {dep.session_id}")
@@ -46,11 +46,6 @@ def main() -> None:
     print("\n=== Auth Key Check ===")
     auth_ok = dep.check_auth_key()
     print(f"  auth key valid: {auth_ok}")
-
-    # ── 4. Check required files (before adding any) ───────────────────────────
-    print("\n=== Pre-add Required Files Check ===")
-    report = dep.check_required_files()
-    print_report("check_required_files (empty session)", report)
 
     # ── 5. Add files ──────────────────────────────────────────────────────────
     print("\n=== Adding Files ===")

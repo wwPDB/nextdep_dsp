@@ -6,15 +6,27 @@ Prepares data to be deposited into OneDep system through the Deposition API. JSO
 
 ## Configuration
 
-`DepositApi` resolves its settings from three sources in order of increasing priority:
+`DepositConfig.load()` resolves settings from three sources in order of increasing priority:
 
-1. `~/.config/nextdep/config.toml` (lowest — persistent dev defaults)
-2. Environment variables (override file — useful for CI/pipelines)
-3. Constructor arguments (highest — always win)
+1. `~/.config/nextdep/config.toml` (lowest, persistent defaults)
+2. Environment variables (override file values)
+3. Keyword arguments passed to `DepositConfig.load()` (highest priority)
+
+The default values are:
+
+| Setting | Default |
+|---|---|
+| `api_key` | `None` |
+| `hostname` | `https://deposit.wwpdb.org/deposition` |
+| `ssl_verify` | `true` |
+| `redirect` | `true` |
+| `schema_base_url` | `https://schemas.wwpdb.org/nextdep` |
+| `schema_cache_dir` | `~/.nextdep/schemas` |
+| `session_dir` | `~/.nextdep/sessions` |
 
 ### Config file
 
-Create `~/.config/nextdep/config.toml`:
+Create `~/.config/nextdep/config.toml` with a `[default]` table:
 
 ```toml
 [default]
@@ -22,7 +34,12 @@ api_key = "your.jwt.token"
 hostname = "https://onedep-depui-test.wwpdb.org/deposition"
 ssl_verify = false
 redirect = true
+schema_base_url = "https://schemas.wwpdb.org/nextdep"
+schema_cache_dir = "/home/you/.nextdep/schemas"
+session_dir = "/home/you/.nextdep/sessions"
 ```
+
+Unknown keys are ignored. An empty `hostname` in the config file is ignored so the default hostname remains in effect. Invalid TOML raises `ConfigError`.
 
 Or run the command line tool:
 
@@ -30,12 +47,12 @@ Or run the command line tool:
 nextdep_api_token set-api-key your.jwt.token
 ```
 
-Once set, instantiate with no arguments:
+Once set, load configuration with no arguments:
 
 ```python
-from nextdep_dsp.deposition.deposit_api import DepositApi
+from nextdep_dsp.config import DepositConfig
 
-api = DepositApi()  # reads from config file
+cfg = DepositConfig.load()
 ```
 
 ### Environment variables
@@ -44,13 +61,34 @@ api = DepositApi()  # reads from config file
 |---|---|---|
 | `ONEDEP_API_KEY` | API JWT token | str |
 | `ONEDEP_HOSTNAME` | Deposition site URL | str |
-| `ONEDEP_SSL_VERIFY` | SSL verification | `true`/`false` |
-| `ONEDEP_REDIRECT` | Follow site redirects | `true`/`false` |
+| `ONEDEP_SSL_VERIFY` | SSL verification | `true`, `false`, `1`, or `0` |
+| `ONEDEP_REDIRECT` | Follow site redirects | `true`, `false`, `1`, or `0` |
+| `ONEDEP_SCHEMA_URL` | Base URL for remote JSON schemas | str |
 
 ```bash
 export ONEDEP_API_KEY="your.jwt.token"
 export ONEDEP_HOSTNAME="https://onedep-depui-test.wwpdb.org/deposition"
 export ONEDEP_SSL_VERIFY="false"
+export ONEDEP_SCHEMA_URL="http://localhost:8080/schemas"
+```
+
+Environment variables override config-file values. An empty `ONEDEP_HOSTNAME` is ignored so the default hostname remains in effect. Invalid boolean values raise `ConfigError`.
+
+### Runtime overrides
+
+Pass keyword arguments to `DepositConfig.load()` to override both the config file and environment:
+
+```python
+from pathlib import Path
+
+from nextdep_dsp.config import DepositConfig
+
+cfg = DepositConfig.load(
+    api_key="your.jwt.token",
+    ssl_verify=False,
+    schema_cache_dir=Path("/tmp/nextdep-schemas"),
+    session_dir=Path("/tmp/nextdep-sessions"),
+)
 ```
 
 ## DSP API

@@ -56,11 +56,6 @@ def main() -> None:
     auth_ok = dep.check_auth_key()
     print(f"  auth key valid: {auth_ok}")
 
-    # ── 4. Check required files (before adding any) ───────────────────────────
-    print("\n=== Pre-add Required Files Check ===")
-    report = dep.check_required_files()
-    print_report("check_required_files (empty session)", report)
-
     # ── 5. Add files ──────────────────────────────────────────────────────────
     print("\n=== Adding Files ===")
 

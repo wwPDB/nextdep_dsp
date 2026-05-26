@@ -5,14 +5,14 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from nextdep_dsp.checks.runner import CheckRunner
 from nextdep_dsp.checks.report import CheckReport
+from nextdep_dsp.checks.runner import CheckRunner
 from nextdep_dsp.deposition.deposit_api import DepositApi
-from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
 from nextdep_dsp.deposition.models import DepositError, DepositStatus, Experiment
-from nextdep_dsp.session.models import LocalFile, LocalSession
+from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
 from nextdep_dsp.exceptions import SchemaError
 from nextdep_dsp.session.json_store import JsonSessionStore
+from nextdep_dsp.session.models import LocalFile, LocalSession
 from nextdep_dsp.session.types import SessionStore
 
 
@@ -315,6 +315,7 @@ class Deposition:
             self._session.remote_dep_id = dep_id
         else:
             dep_id = self._session.remote_dep_id
+
         for file in self._store.get_all_files():
             deposited = api.upload_file(dep_id, file.file_path, file.file_type)
             if file.voxel:
