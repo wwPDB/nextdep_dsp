@@ -15,6 +15,7 @@ from nextdep_dsp.session.store import SessionStore
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_deposition(tmp_path, experiment_type=ExperimentType.XRAY):
     return deposit_init(
         email="user@example.com",
@@ -29,6 +30,7 @@ def _make_deposition(tmp_path, experiment_type=ExperimentType.XRAY):
 # deposit_init
 # ---------------------------------------------------------------------------
 
+
 def test_deposit_init_returns_deposition(tmp_path):
     dep = _make_deposition(tmp_path)
     assert isinstance(dep, Deposition)
@@ -36,6 +38,7 @@ def test_deposit_init_returns_deposition(tmp_path):
 
 def test_deposit_init_session_id_is_uuid(tmp_path):
     import uuid
+
     dep = _make_deposition(tmp_path)
     uuid.UUID(dep.session_id)  # raises if not a valid UUID
 
@@ -78,6 +81,7 @@ def test_deposit_init_remote_dep_id_is_none(tmp_path):
 # deposit_resume
 # ---------------------------------------------------------------------------
 
+
 def test_deposit_resume_returns_same_session(tmp_path):
     dep = _make_deposition(tmp_path)
     session_id = dep.session_id
@@ -101,6 +105,7 @@ def test_deposit_resume_restores_state(tmp_path):
     resumed = deposit_resume(session_id, _base_dir=tmp_path)
     assert resumed.session_id == session_id
     from nextdep_dsp.session.store import SessionStore
+
     store = SessionStore(session_id, base_dir=tmp_path)
     session = store.get_session()
     assert session.experiment_type == ExperimentType.EM
@@ -130,6 +135,7 @@ def test_deposit_resume_raises_for_unknown_session(tmp_path):
 # set_experiment_type
 # ---------------------------------------------------------------------------
 
+
 def test_set_experiment_type_updates_session(tmp_path):
     dep = deposit_init(
         email="user@example.com",
@@ -140,6 +146,7 @@ def test_set_experiment_type_updates_session(tmp_path):
     dep.set_experiment_type(ExperimentType.EM)
     # Read back from store to confirm persistence
     from nextdep_dsp.session.store import SessionStore
+
     store = SessionStore(dep.session_id, base_dir=tmp_path)
     session = store.get_session()
     assert session.experiment_type == ExperimentType.EM
@@ -149,6 +156,7 @@ def test_set_experiment_type_updates_session(tmp_path):
 # ---------------------------------------------------------------------------
 # add_file / remove_file
 # ---------------------------------------------------------------------------
+
 
 def test_add_file_returns_file_id(tmp_path):
     dep = _make_deposition(tmp_path)
@@ -172,6 +180,7 @@ def test_remove_file_deletes_from_store(tmp_path):
     file_id = dep.add_file(str(cif), FileType.MMCIF_COORD)
     dep.remove_file(file_id)
     from nextdep_dsp.session.store import SessionStore
+
     store = SessionStore(dep.session_id, base_dir=tmp_path)
     with pytest.raises(KeyError):
         store.get_file(file_id)
@@ -181,6 +190,7 @@ def test_remove_file_deletes_from_store(tmp_path):
 # ---------------------------------------------------------------------------
 # check_auth_key
 # ---------------------------------------------------------------------------
+
 
 def test_check_auth_key_returns_true_on_success(tmp_path):
     dep = _make_deposition(tmp_path)
@@ -201,6 +211,7 @@ def test_check_auth_key_returns_false_on_exception(tmp_path):
 # ---------------------------------------------------------------------------
 # check_* methods
 # ---------------------------------------------------------------------------
+
 
 def test_check_required_files_returns_check_report(tmp_path):
     dep = _make_deposition(tmp_path)
@@ -274,6 +285,7 @@ def test_check_file_type_returns_check_report(tmp_path):
 # ---------------------------------------------------------------------------
 # deposit
 # ---------------------------------------------------------------------------
+
 
 def test_deposit_raises_without_experiment_type(tmp_path):
     dep = deposit_init(
@@ -357,6 +369,7 @@ def test_deposit_calls_process(tmp_path):
 # get_status
 # ---------------------------------------------------------------------------
 
+
 def test_get_status_raises_before_deposit(tmp_path):
     dep = _make_deposition(tmp_path)
     with pytest.raises(RuntimeError, match="deposit\\(\\)"):
@@ -385,6 +398,7 @@ def test_get_status_delegates_to_api(tmp_path):
 # get_experiment_file_types (stub)
 # ---------------------------------------------------------------------------
 
+
 def test_get_experiment_file_types_returns_list(tmp_path):
     dep = _make_deposition(tmp_path)
     result = dep.get_experiment_file_types()
@@ -394,6 +408,7 @@ def test_get_experiment_file_types_returns_list(tmp_path):
 # ---------------------------------------------------------------------------
 # re-submit to existing deposition
 # ---------------------------------------------------------------------------
+
 
 def test_deposit_skips_create_if_remote_dep_id_set(tmp_path):
     """Second deposit() reuses the existing remote deposition."""
@@ -456,6 +471,7 @@ def test_deposit_resubmit_uploads_all_files(tmp_path):
 # context manager
 # ---------------------------------------------------------------------------
 
+
 def test_deposition_context_manager(tmp_path):
     with deposit_init(
         email="user@example.com",
@@ -467,6 +483,7 @@ def test_deposition_context_manager(tmp_path):
         assert isinstance(dep, Deposition)
     # After exiting, the store should be closed; re-opening should work
     from nextdep_dsp.session.store import SessionStore
+
     with SessionStore(dep.session_id, base_dir=tmp_path) as store:
         session = store.get_session()
         assert session.session_id == dep.session_id

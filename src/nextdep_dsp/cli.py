@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import typing
 from pathlib import Path
 
 import typer
@@ -38,7 +39,7 @@ log = logging.getLogger(__name__)
 
 @sessions_app.command("list")
 def sessions_list(
-    base_dir: Path | None = typer.Option(None, "--base-dir", help="Override session storage directory."),  # noqa: B008
+    base_dir: typing.Optional[Path] = typer.Option(None, "--base-dir", help="Override session storage directory."),  # noqa: B008
 ) -> None:
     """List all local deposition sessions."""
     from nextdep_dsp.dsp import list_sessions
@@ -84,6 +85,8 @@ def sessions_list(
         )
 
     console.print(table)
+
+
 def _validate_create_args(
     exptype: str,
     email: str,
