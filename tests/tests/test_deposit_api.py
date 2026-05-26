@@ -181,7 +181,7 @@ class DepositApiTests(unittest.TestCase):
             "type": "co-pdb",
             "created": "Thursday, April 21, 2023 14:30:00",
         }
-        self.deposit_api.rest_adapter.post = Mock(return_value=Mock(status_code=200, data=expected_response))
+        self.deposit_api.rest_adapter.repost = Mock(return_value=Mock(status_code=200, data=expected_response))
 
         result = self.deposit_api.upload_file(dep_id=self.dep_id, file_path=file_path, file_type=FileType.PDB_COORD)
         self.assertIsInstance(result, DepositedFile, "File upload failed")
@@ -192,7 +192,7 @@ class DepositApiTests(unittest.TestCase):
         os.remove(file_path)
 
     def test_upload_file_failed(self):
-        self.deposit_api.rest_adapter.post = Mock(side_effect=DepositApiException("Invalid file", 404))
+        self.deposit_api.rest_adapter.repost = Mock(side_effect=DepositApiException("Invalid file", 404))
         with self.assertRaises(DepositApiException) as context:
             _result = self.deposit_api.upload_file(
                 dep_id=self.dep_id, file_path="/not/exists/file.mmcif", file_type=FileType.PDB_COORD

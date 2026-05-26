@@ -365,6 +365,7 @@ class DepositedFile:
         name: str,
         file_type: Union[str, FileType],
         metadata: dict = None,
+        uploadedBytes: int = 0,
         errors: list[str] = None,
         warnings: list[str] = None,
     ):
@@ -389,6 +390,8 @@ class DepositedFile:
             self._type = file_type
 
         self._metadata = EmMapMetadata(**metadata) if metadata else None
+
+        self._uploadedBytes = int(uploadedBytes)
 
         self._errors = [DepositError(**error) for error in errors if error != ""] if errors else []
         self._warnings = [DepositError(**warning) for warning in warnings if warning != ""] if warnings else []
@@ -423,6 +426,10 @@ class DepositedFile:
     @property
     def file_type(self) -> FileType:
         return self._type
+
+    @property
+    def uploadedBytes(self) -> int:
+        return self._uploadedBytes
 
     @property
     def errors(self) -> list[DepositError]:
