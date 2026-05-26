@@ -14,7 +14,7 @@ class ApiError(NextDepError):
         self.status_code = status_code
 
 
-class ConfigError(NextDepError):
+class ConfigError(NextDepError, ValueError):
     """Missing or invalid configuration."""
 
 

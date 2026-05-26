@@ -188,3 +188,50 @@ def test_deposit_api_uses_config_file(monkeypatch, tmp_path):
     api = DepositApi()
     assert api._api_key == "file-key"
     assert api._hostname == "https://file.example.com"
+
+from nextdep_dsp.exceptions import ConfigError
+
+
+def test_defaults_include_schema_and_session_dirs(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cfg = DepositConfig()
+    assert cfg.api_key is None
+    assert cfg.hostname == "https://deposit.wwpdb.org/deposition"
+    assert cfg.ssl_verify is True
+    assert cfg.redirect is True
+    assert cfg.schema_base_url == "https://schemas.wwpdb.org/nextdep"
+    assert "schemas" in str(cfg.schema_cache_dir)
+    assert "sessions" in str(cfg.session_dir)
+
+
+def test_constructor_overrides(monkeypatch):
+    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
+    cfg = DepositConfig.load(api_key="test-key", ssl_verify=False)
+    assert cfg.api_key == "test-key"
+    assert cfg.ssl_verify is False
+
+
+def test_env_var_overrides(monkeypatch):
+    monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
+    monkeypatch.setenv("ONEDEP_SSL_VERIFY", "false")
+    cfg = DepositConfig.load()
+    assert cfg.api_key == "env-key"
+    assert cfg.ssl_verify is False
+
+
+def test_constructor_beats_env_var(monkeypatch):
+    monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
+    cfg = DepositConfig.load(api_key="override-key")
+    assert cfg.api_key == "override-key"
+
+
+def test_invalid_bool_env_var_raises_config_error(monkeypatch):
+    monkeypatch.setenv("ONEDEP_SSL_VERIFY", "yes")
+    with pytest.raises(ConfigError):
+        DepositConfig.load()
+
+
+def test_schema_base_url_env_override(monkeypatch):
+    monkeypatch.setenv("ONEDEP_SCHEMA_URL", "http://localhost:8080/schemas")
+    cfg = DepositConfig.load()
+    assert cfg.schema_base_url == "http://localhost:8080/schemas"
