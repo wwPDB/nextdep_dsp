@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from nextdep_dsp.deposition.enum import Country, ExperimentType, FileType
+from nextdep_dsp.enums import Country, ExperimentType, FileType
 
 
 @dataclass
@@ -25,7 +25,6 @@ class LocalSession:
     country: Country
     experiment_type: ExperimentType | None
     created_at: datetime
-    db_path: str
     remote_dep_id: str | None = None
     em_subtype: str | None = None
     coordinates: bool | None = None
