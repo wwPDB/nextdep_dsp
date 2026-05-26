@@ -98,3 +98,28 @@ def test_em_fails_without_subtype(runner_with_files_schema: CheckRunner):
     files = [LocalFile("f1", "s1", "/tmp/map.map", FileType.EM_MAP)]
     report = runner_with_files_schema.check_required_files(files, ExperimentType.EM)
     assert report.ok is False
+
+
+def test_check_mmcif_file_returns_info_when_no_schema(runner_no_schema: CheckRunner):
+    file = LocalFile("f1", "s1", "/tmp/model.cif", FileType.MMCIF_COORD)
+    report = runner_no_schema.check_mmcif_file(file)
+    assert report.ok is True
+    assert any(i.severity == CheckSeverity.INFO for i in report.issues)
+
+
+def test_check_mmcif_category_returns_info_when_no_schema(runner_no_schema: CheckRunner):
+    file = LocalFile("f1", "s1", "/tmp/model.cif", FileType.MMCIF_COORD)
+    report = runner_no_schema.check_mmcif_category(file, "_atom_site")
+    assert report.ok is True
+
+
+def test_check_mmcif_field_returns_info_when_no_schema(runner_no_schema: CheckRunner):
+    file = LocalFile("f1", "s1", "/tmp/model.cif", FileType.MMCIF_COORD)
+    report = runner_no_schema.check_mmcif_field(file, "_atom_site", "Cartn_x")
+    assert report.ok is True
+
+
+def test_check_file_type_returns_info_when_no_schema(runner_no_schema: CheckRunner):
+    file = LocalFile("f1", "s1", "/tmp/model.cif", FileType.MMCIF_COORD)
+    report = runner_no_schema.check_file_type(file, FileType.MMCIF_COORD)
+    assert report.ok is True
