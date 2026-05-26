@@ -43,6 +43,7 @@ lint = [
 test = [
     "coverage",
     "pytest",
+    "pytest-httpserver",
 ]
 typecheck = [
     "ty",
