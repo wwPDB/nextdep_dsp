@@ -61,7 +61,6 @@ docs = [
 
 [project.scripts]
 nextdep_dsp = "nextdep_dsp.cli:app"
-nextdep_schema_compliance = "nextdep_dsp.validation.validate:app"
 nextdep_api_token = "nextdep_dsp.authorization.token:app"
 
 [tool.ty]

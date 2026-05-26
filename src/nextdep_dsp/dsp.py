@@ -5,27 +5,15 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from nextdep_dsp.checks.file_checks import (
-    check_file_type as _check_file_type,
-)
-from nextdep_dsp.checks.file_checks import (
-    check_mmcif_category as _check_mmcif_category,
-)
-from nextdep_dsp.checks.file_checks import (
-    check_mmcif_field as _check_mmcif_field,
-)
-from nextdep_dsp.checks.file_checks import (
-    check_mmcif_file as _check_mmcif_file,
-)
-from nextdep_dsp.checks.file_checks import (
-    check_required_files as _check_required_files,
-)
+from nextdep_dsp.checks.runner import CheckRunner
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.deposition.deposit_api import DepositApi
-from nextdep_dsp.deposition.enum import Country, EMSubType, ExperimentType, FileType
+from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
 from nextdep_dsp.deposition.models import DepositError, DepositStatus, Experiment
 from nextdep_dsp.session.models import LocalFile, LocalSession
-from nextdep_dsp.session.store import SessionStore
+from nextdep_dsp.exceptions import SchemaError
+from nextdep_dsp.session.json_store import JsonSessionStore
+from nextdep_dsp.session.types import SessionStore
 
 
 def _md5_of_file(path: Path, chunk_size: int = 1 << 20) -> str:
@@ -55,7 +43,7 @@ def list_sessions(base_dir: Path | None = None) -> list[tuple[LocalSession, list
         if not json_path.exists():
             continue
         try:
-            store = SessionStore(entry.name, base_dir=_base)
+            store = JsonSessionStore(entry.name, base_dir=_base)
             session = store.get_session()
             files = store.get_all_files()
             store.close()
@@ -90,7 +78,7 @@ def deposit_init(
         A Deposition object representing the local session.
     """
     session_id = str(uuid.uuid4())
-    store = SessionStore(session_id, base_dir=_base_dir)
+    store = JsonSessionStore(session_id, base_dir=_base_dir)
     em_subtype_str = em_subtype.value if isinstance(em_subtype, EMSubType) else em_subtype
     session = LocalSession(
         session_id=session_id,
@@ -99,7 +87,6 @@ def deposit_init(
         country=country,
         experiment_type=experiment_type,
         created_at=datetime.now(),
-        db_path=str(store.db_path),
         em_subtype=em_subtype_str,
         coordinates=coordinates,
     )
@@ -123,9 +110,38 @@ def deposit_resume(
     Raises:
         KeyError: If no session with the given session_id exists.
     """
-    store = SessionStore(session_id, base_dir=_base_dir)
+    store = JsonSessionStore(session_id, base_dir=_base_dir)
     store.get_session()  # raises KeyError if not found
     return Deposition(store=store)
+
+
+class _UnavailableSchemaProvider:
+    def get_schema(self, schema_name: str) -> dict:
+        raise SchemaError(f"Schema {schema_name!r} not configured for facade checks")
+
+
+def _runner() -> CheckRunner:
+    return CheckRunner(schema_provider=_UnavailableSchemaProvider())
+
+
+def _check_required_files(files: list[LocalFile], experiment_type: ExperimentType | None, em_subtype: str | None = None) -> CheckReport:
+    return _runner().check_required_files(files, experiment_type, em_subtype)
+
+
+def _check_mmcif_file(file: LocalFile) -> CheckReport:
+    return _runner().check_mmcif_file(file)
+
+
+def _check_mmcif_category(file: LocalFile, category: str) -> CheckReport:
+    return _runner().check_mmcif_category(file, category)
+
+
+def _check_mmcif_field(file: LocalFile, category: str, field: str) -> CheckReport:
+    return _runner().check_mmcif_field(file, category, field)
+
+
+def _check_file_type(file: LocalFile, file_type: FileType) -> CheckReport:
+    return _runner().check_file_type(file, file_type)
 
 
 class Deposition:

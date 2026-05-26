@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from nextdep_dsp.checks.report import CheckReport
-from nextdep_dsp.deposition.enum import Country, EMSubType, ExperimentType, FileType
+from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
 from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume
-from nextdep_dsp.session.store import SessionStore
+from nextdep_dsp.session.json_store import JsonSessionStore
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -59,7 +59,7 @@ def test_add_file_stores_md5_and_mtime(tmp_path):
 
     file_id = dep.add_file(str(test_file), FileType.MMCIF_COORD)
 
-    with SessionStore(dep.session_id, base_dir=tmp_path) as store:
+    with JsonSessionStore(dep.session_id, base_dir=tmp_path) as store:
         f = store.get_file(file_id)
 
     expected_md5 = hashlib.md5(b"hello").hexdigest()
@@ -100,8 +100,8 @@ def test_deposit_resume_restores_state(tmp_path):
 
     resumed = deposit_resume(session_id, _base_dir=tmp_path)
     assert resumed.session_id == session_id
-    from nextdep_dsp.session.store import SessionStore
-    store = SessionStore(session_id, base_dir=tmp_path)
+    from nextdep_dsp.session.json_store import JsonSessionStore
+    store = JsonSessionStore(session_id, base_dir=tmp_path)
     session = store.get_session()
     assert session.experiment_type == ExperimentType.EM
     assert session.email == "user@example.com"
@@ -139,8 +139,8 @@ def test_set_experiment_type_updates_session(tmp_path):
     )
     dep.set_experiment_type(ExperimentType.EM)
     # Read back from store to confirm persistence
-    from nextdep_dsp.session.store import SessionStore
-    store = SessionStore(dep.session_id, base_dir=tmp_path)
+    from nextdep_dsp.session.json_store import JsonSessionStore
+    store = JsonSessionStore(dep.session_id, base_dir=tmp_path)
     session = store.get_session()
     assert session.experiment_type == ExperimentType.EM
     store.close()
@@ -171,8 +171,8 @@ def test_remove_file_deletes_from_store(tmp_path):
     cif.write_text("data_test\n")
     file_id = dep.add_file(str(cif), FileType.MMCIF_COORD)
     dep.remove_file(file_id)
-    from nextdep_dsp.session.store import SessionStore
-    store = SessionStore(dep.session_id, base_dir=tmp_path)
+    from nextdep_dsp.session.json_store import JsonSessionStore
+    store = JsonSessionStore(dep.session_id, base_dir=tmp_path)
     with pytest.raises(KeyError):
         store.get_file(file_id)
     store.close()
@@ -466,7 +466,7 @@ def test_deposition_context_manager(tmp_path):
     ) as dep:
         assert isinstance(dep, Deposition)
     # After exiting, the store should be closed; re-opening should work
-    from nextdep_dsp.session.store import SessionStore
-    with SessionStore(dep.session_id, base_dir=tmp_path) as store:
+    from nextdep_dsp.session.json_store import JsonSessionStore
+    with JsonSessionStore(dep.session_id, base_dir=tmp_path) as store:
         session = store.get_session()
         assert session.session_id == dep.session_id
