@@ -63,9 +63,7 @@ def _missing_required_file_messages(
 
     if experiment_type in {ExperimentType.XRAY, ExperimentType.NEUTRON}:
         if not present.intersection(_STRUCTURE_FACTOR_FILE_TYPES):
-            messages.append(
-                "Missing required structure factors file: expected one of xs-cif or xs-mtz"
-            )
+            messages.append("Missing required structure factors file: expected one of xs-cif or xs-mtz")
 
     if experiment_type == ExperimentType.FIBER and "layer-lines" not in present:
         messages.append("Missing required fiber diffraction file: expected layer-lines")
@@ -81,18 +79,14 @@ def _missing_required_file_messages(
             messages.append("Missing required half-map files: expected 2 half-map files")
 
     if experiment_type == ExperimentType.EC and not present.intersection(_EC_DATA_FILE_TYPES):
-        messages.append(
-            "Missing required experimental data file: expected at least one of vo-map, xs-cif, or xs-mtz"
-        )
+        messages.append("Missing required experimental data file: expected at least one of vo-map, xs-cif, or xs-mtz")
 
     if experiment_type in {ExperimentType.NMR, ExperimentType.SSNMR}:
         if not present.intersection(_NMR_UNIFIED_FILE_TYPES):
             if "nm-shi" not in present:
                 messages.append("Missing required chemical shifts file: expected nm-shi")
             if not present.intersection(_NMR_RESTRAINT_FILE_TYPES):
-                messages.append(
-                    "Missing required NMR restraints file: expected at least one nm-res-* file"
-                )
+                messages.append("Missing required NMR restraints file: expected at least one nm-res-* file")
 
     return messages
 

@@ -28,16 +28,16 @@ _console = Console(stderr=True)
 # ── Configuration ─────────────────────────────────────────────────────────────
 # Change all values marked with  <<<< CHANGE THIS  before running.
 
-EMAIL = "your.email@example.com"   # <<<< CHANGE THIS
-USERS = ["0000-0000-0000-0000"]    # <<<< CHANGE THIS  (ORCID iD)
+EMAIL = "your.email@example.com"  # <<<< CHANGE THIS
+USERS = ["0000-0000-0000-0000"]  # <<<< CHANGE THIS  (ORCID iD)
 
-BASE = "/path/to/your/em/files"    # <<<< CHANGE THIS  (directory containing your EM files)
+BASE = "/path/to/your/em/files"  # <<<< CHANGE THIS  (directory containing your EM files)
 
-COORD_FILE   = f"{BASE}/coord.cif"            # <<<< CHANGE THIS  (adjust filename)
-MAP_FILE     = f"{BASE}/primary.map.gz"       # <<<< CHANGE THIS  (adjust filename)
-HALF_MAP_1   = f"{BASE}/half_map_1.map.gz"    # <<<< CHANGE THIS  (adjust filename)
-HALF_MAP_2   = f"{BASE}/half_map_2.map.gz"    # <<<< CHANGE THIS  (adjust filename)
-IMAGE_FILE   = f"{BASE}/image.png"            # <<<< CHANGE THIS  (adjust filename)
+COORD_FILE = f"{BASE}/coord.cif"  # <<<< CHANGE THIS  (adjust filename)
+MAP_FILE = f"{BASE}/primary.map.gz"  # <<<< CHANGE THIS  (adjust filename)
+HALF_MAP_1 = f"{BASE}/half_map_1.map.gz"  # <<<< CHANGE THIS  (adjust filename)
+HALF_MAP_2 = f"{BASE}/half_map_2.map.gz"  # <<<< CHANGE THIS  (adjust filename)
+IMAGE_FILE = f"{BASE}/image.png"  # <<<< CHANGE THIS  (adjust filename)
 # FSC_XML_FILE = f"{BASE}/fsc.xml"
 
 
@@ -64,8 +64,8 @@ def main() -> None:
         name
         for name, placeholder, value in [
             ("EMAIL", "your.email@example.com", EMAIL),
-            ("USERS", ["0000-0000-0000-0000"],  USERS),
-            ("BASE",  "/path/to/your/em/files", BASE),
+            ("USERS", ["0000-0000-0000-0000"], USERS),
+            ("BASE", "/path/to/your/em/files", BASE),
         ]
         if value == placeholder
     ]
@@ -78,7 +78,6 @@ def main() -> None:
         _console.print(Panel(msg, title="[bold red]⚠  Configuration[/bold red]", border_style="red"))
 
     with _console.status("[cyan]Initializing deposit…[/cyan]", spinner="dots") as spin:
-
         # ── 1. Initialization ────────────────────────────────────────────────
         dep = dsp.deposit_init(email=EMAIL, users=USERS, country=dsp.Country.USA)
         ok(f"Deposit initialized  session_id={dep.session_id}")
@@ -127,7 +126,7 @@ def main() -> None:
 
         # ── 5b. Set voxel values for map files ────────────────────────────────
         spin.update("[cyan]Setting voxel values…[/cyan]")
-        dep.set_voxel_values(map_id,   spacing_x=1.0825, spacing_y=1.0825, spacing_z=1.0825, contour=0.01)
+        dep.set_voxel_values(map_id, spacing_x=1.0825, spacing_y=1.0825, spacing_z=1.0825, contour=0.01)
         dep.set_voxel_values(half1_id, spacing_x=1.0825, spacing_y=1.0825, spacing_z=1.0825, contour=0.01)
         dep.set_voxel_values(half2_id, spacing_x=1.0825, spacing_y=1.0825, spacing_z=1.0825, contour=0.01)
         ok("Voxel values set for map, half1, half2")
@@ -143,7 +142,7 @@ def main() -> None:
             "check_file_type (coord, MMCIF_COORD)",
             dep.check_file_type(coord_id, dsp.FileType.MMCIF_COORD),
         )
-        print_report("check_file_type (map,   EM_MAP)",      dep.check_file_type(map_id,   dsp.FileType.EM_MAP))
+        print_report("check_file_type (map,   EM_MAP)", dep.check_file_type(map_id, dsp.FileType.EM_MAP))
         print_report("check_file_type (half1, EM_HALF_MAP)", dep.check_file_type(half1_id, dsp.FileType.EM_HALF_MAP))
         print_report("check_file_type (half2, EM_HALF_MAP)", dep.check_file_type(half2_id, dsp.FileType.EM_HALF_MAP))
         print_report("check_file_type (image, ENTRY_IMAGE)", dep.check_file_type(image_id, dsp.FileType.ENTRY_IMAGE))
