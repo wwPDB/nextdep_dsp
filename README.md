@@ -2,7 +2,7 @@
 
 ![PyPI version](https://img.shields.io/pypi/v/nextdep_dsp.svg)
 
-Prepares data to be deposited into OneDep system through the Deposition API.
+Prepares data to be deposited into OneDep system through the Deposition API. JSON schemas served remotelly will be used to check metadata in mmCIF files and also check if the local deposition/session has all required files for the chosen experiment type. Checks will be carried before deposition is created on the server and files are uploaded. 
 
 ## Configuration
 
