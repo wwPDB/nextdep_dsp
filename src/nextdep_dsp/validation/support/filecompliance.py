@@ -70,6 +70,9 @@ class FileCompliance(SchemaCompliance):
         if exptype not in explist:
             logger.error("invalid experiment type")
             return False
+        if len(filetypes) == 0:
+            logger.error("filetypes list cannot be empty")
+            return False
         if not all(f in filelist for f in filetypes):
             logger.error("invalid file type")
             return False
@@ -90,6 +93,8 @@ class FileCompliance(SchemaCompliance):
             subtype (str): subtype for em experiment
         Returns:
             str: path to generated json file
+        Raises:
+            ValueError: if parameters are invalid
         """
         if not self.verify_params(exptype, filetypes, subtype):
             raise ValueError("invalid parameters")
