@@ -85,6 +85,8 @@ def sessions_list(
         )
 
     console.print(table)
+
+
 def _validate_create_args(
     exptype: str,
     email: str,

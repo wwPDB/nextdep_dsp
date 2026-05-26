@@ -28,10 +28,10 @@ _console = Console(stderr=True)
 # ── Configuration ─────────────────────────────────────────────────────────────
 # Change all values marked with  <<<< CHANGE THIS  before running.
 
-EMAIL      = "your.email@example.com"   # <<<< CHANGE THIS
-USERS      = ["0000-0000-0000-0000"]    # <<<< CHANGE THIS  (ORCID iD)
+EMAIL = "your.email@example.com"  # <<<< CHANGE THIS
+USERS = ["0000-0000-0000-0000"]  # <<<< CHANGE THIS  (ORCID iD)
 COORD_FILE = "/path/to/your/coord.cif"  # <<<< CHANGE THIS
-SF_FILE    = "/path/to/your/sf.cif"     # <<<< CHANGE THIS
+SF_FILE = "/path/to/your/sf.cif"  # <<<< CHANGE THIS
 
 
 def ok(msg: str) -> None:
@@ -56,10 +56,10 @@ def main() -> None:
     _unset = [
         name
         for name, placeholder, value in [
-            ("EMAIL",      "your.email@example.com",   EMAIL),
-            ("USERS",      ["0000-0000-0000-0000"],    USERS),
-            ("COORD_FILE", "/path/to/your/coord.cif",  COORD_FILE),
-            ("SF_FILE",    "/path/to/your/sf.cif",     SF_FILE),
+            ("EMAIL", "your.email@example.com", EMAIL),
+            ("USERS", ["0000-0000-0000-0000"], USERS),
+            ("COORD_FILE", "/path/to/your/coord.cif", COORD_FILE),
+            ("SF_FILE", "/path/to/your/sf.cif", SF_FILE),
         ]
         if value == placeholder
     ]
@@ -72,7 +72,6 @@ def main() -> None:
         _console.print(Panel(msg, title="[bold red]⚠  Configuration[/bold red]", border_style="red"))
 
     with _console.status("[cyan]Initializing deposit…[/cyan]", spinner="dots") as spin:
-
         # ── 1. Initialization ────────────────────────────────────────────────
         dep = dsp.deposit_init(email=EMAIL, users=USERS, country=dsp.Country.USA)
         ok(f"Deposit initialized  session_id={dep.session_id}")
