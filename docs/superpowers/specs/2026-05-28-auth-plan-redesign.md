@@ -61,27 +61,30 @@ The protocol should describe token lifecycle behavior, not browser login:
 
 ## Token Storage
 
-Use a JSON token file at `~/.config/nextdep/tokens.json` unless the caller supplies a test/custom path.
+Tokens must be stored in the TOML configuration file, not in a separate JSON token file. The auth provider/token manager should use configuration to determine which TOML file to read and write. By default this is the existing `~/.config/nextdep/config.toml`, and Plan 2 must make the config path injectable for tests and embedding applications.
 
-Store entries by normalized API hostname so multiple remote APIs can coexist. Each entry should contain at least:
+Store token entries under `auths.<normalized-hostname>` TOML tables so multiple remote APIs can coexist. Each entry should contain at least:
 
-```json
-{
-  "access_token": "eyJ...",
-  "refresh_token": "opaque-string"
-}
+```toml
+[auths.deposit_wwpdb_org_deposition]
+access_token = "eyJ..."
+refresh_token = "opaque-string"
 ```
 
-Writes must be atomic using a temporary file followed by `os.replace`.
+The plan must require per-host isolation and must not overwrite unrelated `[default]` configuration keys.
 
-Corrupt or unreadable token files should not silently authenticate. The plan should require `AuthError` for malformed token storage so users are not left with ambiguous auth behavior.
+Writes must preserve the TOML configuration file as much as practical and use an atomic write pattern: write a temporary file, then `os.replace`.
+
+Malformed or unreadable token data should not silently authenticate. The plan should require `AuthError` for malformed token storage so users are not left with ambiguous auth behavior.
 
 ## Refresh And Revocation
 
-`TokenStore` should be initialized with enough API context to build or receive the refresh and revoke URLs. The plan should use the documented endpoints:
+`TokenStore` should be initialized with enough API context to build or receive the refresh and revoke URLs. The plan should use the documented full endpoint paths:
 
-- refresh: `{hostname}/auth/tokens/refresh` when `hostname` already includes `/deposition`, matching current `DepositConfig.hostname`
-- revoke: `{hostname}/auth/tokens/revoke` when `hostname` already includes `/deposition`
+- refresh: `/deposition/auth/tokens/refresh`
+- revoke: `/deposition/auth/tokens/revoke`
+
+When composing URLs from `DepositConfig.hostname`, avoid accidentally dropping or duplicating `/deposition`. For the current default hostname `https://deposit.wwpdb.org/deposition`, the refresh URL is `https://deposit.wwpdb.org/deposition/auth/tokens/refresh`.
 
 If Plan 3 changes URL composition for API clients, it must keep these auth endpoint paths aligned with the server documentation.
 
@@ -108,7 +111,7 @@ Update `docs/superpowers/plans/2026-05-20-api-client.md` so API client integrati
 - Remove `OidcAuth` from public exports and test expectations.
 - Make `HttpApiClient` depend on the `AuthProvider`/token manager from Plan 2.
 - Before each API request, ask the auth provider for a valid access token and set `Authorization: Bearer <token>`.
-- Do not use the stale `/api/v1/auth/token` refresh URL from the old plan. Use the documented `/deposition/auth/tokens/refresh` semantics through the auth provider.
+- Do not use the stale `/api/v1/auth/token` refresh URL from the old plan. Use the documented full `/deposition/auth/tokens/refresh` endpoint through the auth provider.
 - Keep API-client integration in Plan 3, not Plan 2.
 - Static `config.api_key` fallback can remain only if the plan explicitly labels it as legacy compatibility during migration.
 
@@ -116,7 +119,7 @@ Update `docs/superpowers/plans/2026-05-20-api-client.md` so API client integrati
 
 Plan 2 tests should cover:
 
-- Manual token pair storage.
+- Manual token pair storage in the configured TOML config file.
 - Per-hostname isolation.
 - JWT expiry detection without signature verification.
 - Returning an unexpired access token without network calls.
@@ -124,7 +127,7 @@ Plan 2 tests should cover:
 - Persisting rotated refresh tokens immediately.
 - Raising `AuthError` when refresh token is missing, expired, revoked, invalid, or refresh returns `401`.
 - Revoking tokens and clearing local storage on `204`.
-- Atomic writes and malformed token-file handling.
+- Atomic TOML config writes, preservation of unrelated config keys, and malformed token-data handling.
 
 Plan 3 tests should cover:
 
