@@ -322,28 +322,20 @@
           "files": {
             "contains": {
               "enum": [
-                "vo-map",
                 "xs-cif",
                 "xs-mtz"
               ]
             },
             "minContains": 1,
-            "maxContains": 2,
+            "maxContains": 1,
             "items": {
               "enum": [
-                "co-pdb",
                 "co-cif",
                 "xs-cif",
                 "xs-mtz",
                 "xa-par",
                 "xa-top",
-                "xa-mat",
-                "vo-map",
-                "img-emdb",
-                "add-map",
-                "mask-map",
-                "half-map",
-                "fsc-xml"
+                "xa-mat"
               ]
             }
           }
