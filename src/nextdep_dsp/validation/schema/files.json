@@ -56,16 +56,13 @@
           "nm-aux-gro",
           "nm-res-isd",
           "nm-res-ros",
-          "nm-res-sych",
+          "nm-res-sch",
           "nm-res-syb",
           "nm-res-xpl",
           "nm-res-oth",
           "nm-pea-any",
           "nm-uni-nef",
-          "nm-uni-str",
-          "nmr-data-nef",
-          "nmr-star",
-          "nmr-data-str"
+          "nm-uni-str"
         ]
       }
     }
@@ -378,16 +375,13 @@
                 "nm-aux-gro",
                 "nm-res-isd",
                 "nm-res-ros",
-                "nm-res-sych",
+                "nm-res-sch",
                 "nm-res-syb",
                 "nm-res-xpl",
                 "nm-res-oth",
                 "nm-pea-any",
                 "nm-uni-nef",
-                "nm-uni-str",
-                "nmr-data-nef",
-                "nmr-star",
-                "nmr-data-str"
+                "nm-uni-str"
               ]
             }
           }
