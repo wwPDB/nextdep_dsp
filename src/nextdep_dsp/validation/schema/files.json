@@ -45,23 +45,27 @@
           "nm-shi",
           "nm-res-amb",
           "nm-aux-amb",
+          "nm-res-ari",
           "nm-res-bio",
+          "nm-aux-cha",
           "nm-res-cha",
           "nm-res-cns",
           "nm-res-cya",
-          "nm-res-dyn",
-          "nm-res-dyn",
           "nm-res-dyn",
           "nm-res-gro",
           "nm-aux-gro",
           "nm-res-isd",
           "nm-res-ros",
+          "nm-res-sych",
           "nm-res-syb",
           "nm-res-xpl",
           "nm-res-oth",
           "nm-pea-any",
           "nm-uni-nef",
-          "nm-uni-str"
+          "nm-uni-str",
+          "nmr-data-nef",
+          "nmr-star",
+          "nmr-data-str"
         ]
       }
     }
@@ -363,23 +367,27 @@
                 "nm-shi",
                 "nm-res-amb",
                 "nm-aux-amb",
+                "nm-res-ari",
                 "nm-res-bio",
+                "nm-aux-cha",
                 "nm-res-cha",
                 "nm-res-cns",
                 "nm-res-cya",
-                "nm-res-dyn",
-                "nm-res-dyn",
                 "nm-res-dyn",
                 "nm-res-gro",
                 "nm-aux-gro",
                 "nm-res-isd",
                 "nm-res-ros",
+                "nm-res-sych",
                 "nm-res-syb",
                 "nm-res-xpl",
                 "nm-res-oth",
                 "nm-pea-any",
                 "nm-uni-nef",
-                "nm-uni-str"
+                "nm-uni-str",
+                "nmr-data-nef",
+                "nmr-star",
+                "nmr-data-str"
               ]
             }
           }
