@@ -420,9 +420,11 @@ into one coherent unit. It also replaces the `handle_invalid_deposit_site` decor
 by handling site redirects inline in `_do()`.
 
 **Auth strategy:**
-- If a `TokenStore` is provided, fetch the JWT via
-  `token_store.get_access_token(refresh_url, ssl_verify)` before each request
-  (the store handles token refresh automatically).
+- If an `AuthProvider` from Plan 2 is provided, call
+  `auth_provider.get_access_token()` before each request and set
+  `Authorization: Bearer <token>`. The provider owns expiry checks, refresh calls,
+  TOML token persistence, refresh-token rotation, and the documented
+  `/deposition/auth/tokens/refresh` endpoint.
 - Otherwise fall back to `config.api_key` as a static Bearer token (legacy mode
   for API-key-based auth during transition).
 
@@ -458,7 +460,7 @@ from nextdep_dsp.api.models import (
     DepositStatus,
     Experiment,
 )
-from nextdep_dsp.auth.token import TokenStore
+from nextdep_dsp.auths.types import AuthProvider
 from nextdep_dsp.config import DepositConfig
 from nextdep_dsp.enums import Country, FileType
 from nextdep_dsp.exceptions import ApiError
@@ -468,12 +470,12 @@ class HttpApiClient:
     def __init__(
         self,
         config: DepositConfig,
-        token_store: TokenStore | None = None,
+        auth_provider: AuthProvider | None = None,
         ver: str = "v1",
         logger: logging.Logger | None = None,
     ) -> None:
         self._config = config
-        self._token_store = token_store
+        self._auth_provider = auth_provider
         self._ver = ver
         self._logger = logger or logging.getLogger(__name__)
         self._base_url = f"{config.hostname}/api/{ver}/"
@@ -483,12 +485,10 @@ class HttpApiClient:
             )
         self._session = requests.Session()
         self._session.verify = config.ssl_verify
-        self._refresh_auth_header()
 
     def _refresh_auth_header(self) -> None:
-        if self._token_store is not None:
-            refresh_url = f"{self._config.hostname}/api/{self._ver}/auth/token"
-            token = self._token_store.get_access_token(refresh_url, self._config.ssl_verify)
+        if self._auth_provider is not None:
+            token = self._auth_provider.get_access_token()
         else:
             token = self._config.api_key or ""
         self._session.headers["Authorization"] = f"Bearer {token}"
@@ -506,6 +506,8 @@ class HttpApiClient:
         headers = {}
         if content_type:
             headers["Content-Type"] = content_type
+
+        self._refresh_auth_header()
 
         try:
             self._logger.debug("method=%s url=%s", http_method, full_url)
@@ -1087,9 +1089,8 @@ Replace the full contents of `src/nextdep_dsp/__init__.py`:
 from nextdep_dsp.api.enums import Status
 from nextdep_dsp.api.models import DepositError, DepositStatus
 from nextdep_dsp.api.types import ApiClient
-from nextdep_dsp.auth.oidc import OidcAuth
-from nextdep_dsp.auth.token import TokenStore
-from nextdep_dsp.auth.types import AuthProvider
+from nextdep_dsp.auths.token import TokenStore
+from nextdep_dsp.auths.types import AuthProvider
 from nextdep_dsp.checks.report import CheckIssue, CheckReport, CheckSeverity, CifLocation
 from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume, list_sessions
 from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
@@ -1120,7 +1121,6 @@ __all__ = [
     "ApiError",
     "DepositApiException",
     # auth
-    "OidcAuth",
     "TokenStore",
     "AuthProvider",
     # protocols
@@ -1246,6 +1246,15 @@ from nextdep_dsp.api.models import Experiment
 from nextdep_dsp.exceptions import ApiError
 
 
+class StubAuthProvider:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def get_access_token(self) -> str:
+        self.calls += 1
+        return f"token-{self.calls}"
+
+
 _DEPOSIT_RESPONSE = {
     "id": "D_800001",
     "email": "test@example.com",
@@ -1292,6 +1301,19 @@ def test_create_deposition(httpserver: HTTPServer, client: HttpApiClient):
     )
     assert isinstance(deposit, Deposit)
     assert deposit.dep_id == "D_800001"
+
+
+def test_auth_provider_sets_bearer_token_before_request(httpserver: HTTPServer, api_config):
+    auth = StubAuthProvider()
+    httpserver.expect_request(
+        "/api/v1/depositions/D_800001/status",
+        method="GET",
+        headers={"Authorization": "Bearer token-1"},
+    ).respond_with_json(_STATUS_RESPONSE)
+    client = HttpApiClient(api_config, auth_provider=auth)
+    status = client.get_status("D_800001")
+    assert isinstance(status, DepositStatus)
+    assert auth.calls == 1
 
 
 def test_get_status(httpserver: HTTPServer, client: HttpApiClient):
@@ -1615,7 +1637,7 @@ from nextdep_dsp import (
     Country, EMSubType, ExperimentType, FileType,
     DepositStatus, DepositError, Status,
     NextDepError, ApiError, DepositApiException,
-    OidcAuth, TokenStore, AuthProvider, ApiClient,
+    TokenStore, AuthProvider, ApiClient,
 )
 print('All imports OK')
 "
