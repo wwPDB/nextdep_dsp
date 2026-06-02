@@ -87,12 +87,12 @@ class TokenStore:
         self.clear_tokens()
 
     def clear_tokens(self) -> None:
+        self._config.access_token = None
+        self._config.refresh_token = None
         try:
             self._config.delete_auth_entry(self._fqdn_key())
         except ConfigError as exc:
             raise AuthError(str(exc)) from exc
-        self._config.access_token = None
-        self._config.refresh_token = None
 
     def _read_entry(self) -> dict[str, str]:
         access_token = self._config.access_token

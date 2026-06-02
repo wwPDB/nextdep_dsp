@@ -68,8 +68,15 @@ def test_multiple_fqdns_are_isolated(tmp_path: Path):
     second = TokenStore(DepositConfig(hostname="https://sequence.wwpdb.org/api", config_path=config_file))
     first.store_tokens(_make_jwt(3600), "refresh-a")
     second.store_tokens(_make_jwt(3600), "refresh-b")
+    # In-memory isolation
     assert first._read_entry()["refresh_token"] == "refresh-a"
     assert second._read_entry()["refresh_token"] == "refresh-b"
+    # TOML-level isolation: each host has its own [auths.<fqdn>] section
+    text = config_file.read_text()
+    assert "[auths.deposit_wwpdb_org]" in text
+    assert "[auths.sequence_wwpdb_org]" in text
+    assert 'refresh_token = "refresh-a"' in text
+    assert 'refresh_token = "refresh-b"' in text
 
 
 def test_get_access_token_returns_unexpired_token_without_network(config: DepositConfig, config_file: Path):
