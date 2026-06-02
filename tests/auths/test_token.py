@@ -140,17 +140,8 @@ def test_revoke_posts_refresh_token_and_clears_local_storage(tmp_path: Path, htt
         store.get_access_token()
 
 
-def test_malformed_auth_table_raises_auth_error(tmp_path: Path):
-    config_file = tmp_path / "config.toml"
-    config_file.write_text("[default]\n[auths.deposit_wwpdb_org]\naccess_token = 123\n")
-    store = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition", config_path=config_file))
-    with pytest.raises(AuthError, match="Malformed token data"):
-        store.get_access_token()
-
-
-def test_get_access_token_raises_auth_error_on_corrupt_toml(tmp_path):
-    config_file = tmp_path / "config.toml"
-    config_file.write_text("this is not : valid toml [[\n")
-    store = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition", config_path=config_file))
-    with pytest.raises(AuthError, match="Failed to parse"):
+def test_get_access_token_raises_auth_error_when_no_tokens_loaded(config: DepositConfig):
+    store = TokenStore(config=config)
+    # config was constructed directly (not via load()), so access_token is None
+    with pytest.raises(AuthError, match="No access token"):
         store.get_access_token()
