@@ -16,7 +16,7 @@ def _make_jwt(exp_offset: int = 3600) -> str:
     header = base64.urlsafe_b64encode(b'{"alg":"HS256"}').rstrip(b"=").decode()
     payload = json.dumps({"exp": int(time.time()) + exp_offset}).encode()
     body = base64.urlsafe_b64encode(payload).rstrip(b"=").decode()
-    return f"{header}.{body}.signature"
+    return f"{header}.{body}."
 
 
 @pytest.fixture
