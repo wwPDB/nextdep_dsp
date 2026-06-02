@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Callable
+from urllib.parse import urlparse
 
 import tomli_w
 
@@ -22,6 +23,16 @@ def _parse_bool(value: str, var_name: str) -> bool:
     if lowered in ("false", "0"):
         return False
     raise ConfigError(f"{var_name}={value!r} is not a valid boolean. Use 'true', 'false', '1', or '0'.")
+
+
+def _hostname_to_fqdn_key(hostname: str) -> str | None:
+    parsed = urlparse(hostname)
+    host = parsed.hostname
+    if host is None:
+        host = urlparse(f"https://{hostname}").hostname
+    if not host:
+        return None
+    return host.replace(".", "_").replace("-", "_")
 
 
 _ENV_MAP: dict[str, tuple[str, Callable[[str], object]]] = {
@@ -45,6 +56,8 @@ class DepositConfig:
     config_path: Path = field(
         default_factory=lambda: Path.home() / ".config" / "nextdep" / "config.toml"
     )
+    access_token: str | None = None
+    refresh_token: str | None = None
 
     @staticmethod
     def _load_toml_file(path: Path) -> dict:
@@ -72,7 +85,7 @@ class DepositConfig:
         raw = cls._load_toml_file(config_file)
         section = raw.get("default", {})
         for key, value in section.items():
-            if key in valid_fields and key != "config_path":
+            if key in valid_fields and key not in ("config_path", "access_token", "refresh_token"):
                 if key == "hostname" and value == "":
                     continue
                 merged[key] = value
@@ -88,6 +101,22 @@ class DepositConfig:
         for key, value in overrides.items():
             if key in valid_fields:
                 merged[key] = value
+
+        # Load tokens from [auths.<fqdn>] unless explicitly overridden via kwargs
+        if "access_token" not in merged and "refresh_token" not in merged:
+            hostname_val = str(merged.get("hostname", cls.__dataclass_fields__["hostname"].default))
+            fqdn_key = _hostname_to_fqdn_key(hostname_val)
+            if fqdn_key:
+                raw_full = cls._load_toml_file(merged["config_path"])  # type: ignore[arg-type]
+                entry = raw_full.get("auths", {}).get(fqdn_key)
+                if isinstance(entry, dict):
+                    acc = entry.get("access_token")
+                    ref = entry.get("refresh_token")
+                    if acc is not None or ref is not None:
+                        if not isinstance(acc, str) or not isinstance(ref, str):
+                            raise ConfigError(f"Malformed token data in [auths.{fqdn_key}]")
+                        merged["access_token"] = acc
+                        merged["refresh_token"] = ref
 
         return cls(**merged)  # type: ignore[arg-type]
 

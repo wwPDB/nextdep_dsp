@@ -316,3 +316,56 @@ def test_write_auth_entry_creates_file_and_parent_dirs_if_missing(tmp_path):
     cfg.write_auth_entry("example_com", {"access_token": "a", "refresh_token": "r"})
     assert cfg_file.exists()
     assert cfg.read_auth_entry("example_com") == {"access_token": "a", "refresh_token": "r"}
+
+
+def test_load_populates_tokens_from_auths_section(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        '[default]\nhostname = "https://deposit.wwpdb.org/deposition"\n'
+        '[auths.deposit_wwpdb_org]\naccess_token = "acc"\nrefresh_token = "ref"\n'
+    )
+    cfg = DepositConfig.load(config_path=cfg_file)
+    assert cfg.access_token == "acc"
+    assert cfg.refresh_token == "ref"
+
+
+def test_load_leaves_tokens_none_when_auths_section_absent(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('[default]\nhostname = "https://deposit.wwpdb.org/deposition"\n')
+    cfg = DepositConfig.load(config_path=cfg_file)
+    assert cfg.access_token is None
+    assert cfg.refresh_token is None
+
+
+def test_load_raises_config_error_for_non_string_token(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        '[default]\nhostname = "https://deposit.wwpdb.org/deposition"\n'
+        '[auths.deposit_wwpdb_org]\naccess_token = 123\nrefresh_token = "ref"\n'
+    )
+    with pytest.raises(ConfigError, match="Malformed token"):
+        DepositConfig.load(config_path=cfg_file)
+
+
+def test_load_does_not_read_tokens_from_default_section(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        '[default]\nhostname = "https://deposit.wwpdb.org/deposition"\n'
+        'access_token = "should_be_ignored"\n'
+    )
+    cfg = DepositConfig.load(config_path=cfg_file)
+    assert cfg.access_token is None
+
+
+def test_load_tokens_can_be_injected_as_override(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('[default]\nhostname = "https://deposit.wwpdb.org/deposition"\n')
+    cfg = DepositConfig.load(config_path=cfg_file, access_token="injected", refresh_token="injected_r")
+    assert cfg.access_token == "injected"
+    assert cfg.refresh_token == "injected_r"
+
+
+def test_deposit_config_constructor_accepts_token_fields():
+    cfg = DepositConfig(access_token="tok", refresh_token="ref")
+    assert cfg.access_token == "tok"
+    assert cfg.refresh_token == "ref"
