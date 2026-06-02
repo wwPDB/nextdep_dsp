@@ -46,6 +46,16 @@ class DepositConfig:
         default_factory=lambda: Path.home() / ".config" / "nextdep" / "config.toml"
     )
 
+    @staticmethod
+    def _load_toml_file(path: Path) -> dict:
+        if not path.exists():
+            return {}
+        try:
+            with path.open("rb") as fp:
+                return tomllib.load(fp)
+        except tomllib.TOMLDecodeError as exc:
+            raise ConfigError(f"Failed to parse {path}: {exc}") from exc
+
     @classmethod
     def load(cls, **overrides: object) -> DepositConfig:
         valid_fields = {f.name for f in fields(cls)}
@@ -59,18 +69,13 @@ class DepositConfig:
         )
         merged["config_path"] = config_file
 
-        if config_file.exists():
-            try:
-                with open(config_file, "rb") as fp:
-                    raw = tomllib.load(fp)
-            except tomllib.TOMLDecodeError as exc:
-                raise ConfigError(f"Failed to parse {config_file}: {exc}") from exc
-            section = raw.get("default", {})
-            for key, value in section.items():
-                if key in valid_fields and key != "config_path":
-                    if key == "hostname" and value == "":
-                        continue
-                    merged[key] = value
+        raw = cls._load_toml_file(config_file)
+        section = raw.get("default", {})
+        for key, value in section.items():
+            if key in valid_fields and key != "config_path":
+                if key == "hostname" and value == "":
+                    continue
+                merged[key] = value
 
         for env_var, (field_name, coerce) in _ENV_MAP.items():
             raw_val = os.environ.get(env_var)
@@ -87,13 +92,7 @@ class DepositConfig:
         return cls(**merged)  # type: ignore[arg-type]
 
     def _read_toml(self) -> dict:
-        if not self.config_path.exists():
-            return {}
-        try:
-            with self.config_path.open("rb") as fp:
-                return tomllib.load(fp)
-        except tomllib.TOMLDecodeError as exc:
-            raise ConfigError(f"Failed to parse {self.config_path}: {exc}") from exc
+        return DepositConfig._load_toml_file(self.config_path)
 
     def _write_toml(self, data: dict) -> None:
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -101,9 +100,12 @@ class DepositConfig:
         try:
             tmp.write_text(tomli_w.dumps(data), encoding="utf-8")
             os.replace(tmp, self.config_path)
-        except Exception:
+        except ConfigError:
             tmp.unlink(missing_ok=True)
             raise
+        except Exception as exc:
+            tmp.unlink(missing_ok=True)
+            raise ConfigError(f"Failed to write {self.config_path}: {exc}") from exc
 
     def read_auth_entry(self, key: str) -> dict | None:
         data = self._read_toml()
@@ -111,7 +113,11 @@ class DepositConfig:
         if not isinstance(auths, dict):
             raise ConfigError("Malformed [auths] section in config.toml")
         entry = auths.get(key)
-        return entry if isinstance(entry, dict) else None
+        if entry is None:
+            return None
+        if not isinstance(entry, dict):
+            raise ConfigError(f"Malformed [auths.{key}] entry in config.toml")
+        return entry
 
     def write_auth_entry(self, key: str, entry: dict) -> None:
         data = self._read_toml()

@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-import os
 import time
 from urllib.parse import urljoin, urlparse
 
 import jwt as pyjwt
 import requests
-import tomli_w
-
-try:
-    import tomllib
-except ImportError:
-    import tomli as tomllib  # type: ignore[no-redef]
 
 from nextdep_dsp.config import DepositConfig
-from nextdep_dsp.exceptions import AuthError
+from nextdep_dsp.exceptions import AuthError, ConfigError
 
 _REFRESH_PATH = "auth/tokens/refresh"
 _REVOKE_PATH = "auth/tokens/revoke"
@@ -25,15 +18,13 @@ class TokenStore:
         self._config = config
 
     def store_tokens(self, access_token: str, refresh_token: str) -> None:
-        data = self._read_config()
-        auths = data.setdefault("auths", {})
-        if not isinstance(auths, dict):
-            raise AuthError("Malformed token data in config.toml")
-        auths[self._fqdn_key()] = {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-        }
-        self._write_config(data)
+        try:
+            self._config.write_auth_entry(
+                self._fqdn_key(),
+                {"access_token": access_token, "refresh_token": refresh_token},
+            )
+        except ConfigError as exc:
+            raise AuthError(str(exc)) from exc
 
     def get_access_token(self) -> str:
         entry = self._read_entry()
@@ -94,52 +85,23 @@ class TokenStore:
         self.clear_tokens()
 
     def clear_tokens(self) -> None:
-        data = self._read_config()
-        auths = data.setdefault("auths", {})
-        if not isinstance(auths, dict):
-            raise AuthError("Malformed token data in config.toml")
-        auths.pop(self._fqdn_key(), None)
-        self._write_config(data)
+        try:
+            self._config.delete_auth_entry(self._fqdn_key())
+        except ConfigError as exc:
+            raise AuthError(str(exc)) from exc
 
     def _read_entry(self) -> dict[str, str]:
-        data = self._read_config()
-        auths = data.get("auths", {})
-        if not isinstance(auths, dict):
-            raise AuthError("Malformed token data in config.toml")
-        entry = auths.get(self._fqdn_key())
-        if not entry:
+        try:
+            entry = self._config.read_auth_entry(self._fqdn_key())
+        except ConfigError as exc:
+            raise AuthError(str(exc)) from exc
+        if entry is None:
             raise AuthError("No access token stored. Paste a token pair first.")
-        if not isinstance(entry, dict):
-            raise AuthError("Malformed token data in config.toml")
         access_token = entry.get("access_token")
         refresh_token = entry.get("refresh_token")
         if not isinstance(access_token, str) or not isinstance(refresh_token, str):
             raise AuthError("Malformed token data in config.toml")
         return {"access_token": access_token, "refresh_token": refresh_token}
-
-    def _read_config(self) -> dict:
-        config_path = self._config.config_path
-        if not config_path.exists():
-            return {}
-        try:
-            with config_path.open("rb") as fp:
-                raw = tomllib.load(fp)
-        except tomllib.TOMLDecodeError as exc:
-            raise AuthError(f"Failed to parse token config: {exc}") from exc
-        if not isinstance(raw, dict):
-            raise AuthError("Malformed token data in config.toml")
-        return raw
-
-    def _write_config(self, data: dict) -> None:
-        config_path = self._config.config_path
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = config_path.with_suffix(".toml.tmp")
-        try:
-            tmp.write_text(tomli_w.dumps(data))
-            os.replace(tmp, config_path)
-        except Exception:
-            tmp.unlink(missing_ok=True)
-            raise
 
     def _fqdn_key(self) -> str:
         parsed = urlparse(self._config.hostname)

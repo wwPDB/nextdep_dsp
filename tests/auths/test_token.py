@@ -146,3 +146,11 @@ def test_malformed_auth_table_raises_auth_error(tmp_path: Path):
     store = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition", config_path=config_file))
     with pytest.raises(AuthError, match="Malformed token data"):
         store.get_access_token()
+
+
+def test_get_access_token_raises_auth_error_on_corrupt_toml(tmp_path):
+    config_file = tmp_path / "config.toml"
+    config_file.write_text("this is not : valid toml [[\n")
+    store = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition", config_path=config_file))
+    with pytest.raises(AuthError, match="Failed to parse"):
+        store.get_access_token()
