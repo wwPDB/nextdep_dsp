@@ -27,7 +27,8 @@ dependencies = [
   "tomli; python_version < '3.11'",
   "jsonschema",
   "tomlkit",
-  "pyjwt"
+  "pyjwt",
+  "tomli-w"
 ]
 requires-python = ">= 3.9"
 
