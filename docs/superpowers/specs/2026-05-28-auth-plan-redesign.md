@@ -63,15 +63,15 @@ The protocol should describe token lifecycle behavior, not browser login:
 
 Tokens must be stored in the TOML configuration file, not in a separate JSON token file. The auth provider/token manager should use configuration to determine which TOML file to read and write. By default this is the existing `~/.config/nextdep/config.toml`, and Plan 2 must make the config path injectable for tests and embedding applications.
 
-Store token entries under `auths.<normalized-hostname>` TOML tables so multiple remote APIs can coexist. Each entry should contain at least:
+Store token entries under `auths.<fqdn>` TOML tables so multiple remote APIs can coexist. The key must use only the hostname FQDN: strip the URL scheme, port, and path such as `/deposition`. Each entry should contain at least:
 
 ```toml
-[auths.deposit_wwpdb_org_deposition]
+[auths.deposit_wwpdb_org]
 access_token = "eyJ..."
 refresh_token = "opaque-string"
 ```
 
-The plan must require per-host isolation and must not overwrite unrelated `[default]` configuration keys.
+The plan must require per-FQDN isolation and must not overwrite unrelated `[default]` configuration keys.
 
 Writes must preserve the TOML configuration file as much as practical and use an atomic write pattern: write a temporary file, then `os.replace`.
 
@@ -120,7 +120,7 @@ Update `docs/superpowers/plans/2026-05-20-api-client.md` so API client integrati
 Plan 2 tests should cover:
 
 - Manual token pair storage in the configured TOML config file.
-- Per-hostname isolation.
+- Per-FQDN isolation, proving paths such as `/deposition` are excluded from the TOML key.
 - JWT expiry detection without signature verification.
 - Returning an unexpired access token without network calls.
 - Refreshing an expired access token.
