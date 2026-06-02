@@ -112,3 +112,17 @@ def test_persists_across_store_instances(tmp_path: Path, session: LocalSession):
     store2 = JsonSessionStore("test-session", base_dir=tmp_path)
     loaded = store2.get_session()
     assert loaded.email == session.email
+
+
+def test_uses_configured_session_dir_when_base_dir_omitted(monkeypatch, tmp_path: Path):
+    session_dir = tmp_path / "configured-sessions"
+    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        f'[default]\nsession_dir = "{session_dir}"\n'
+    )
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+    store = JsonSessionStore("configured-session")
+
+    assert store.json_path == session_dir / "configured-session" / "session.json"

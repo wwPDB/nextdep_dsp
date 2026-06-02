@@ -8,7 +8,7 @@ import pytest
 
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
-from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume
+from nextdep_dsp.dsp import Deposition, deposit_init, deposit_resume, list_sessions
 from nextdep_dsp.session.json_store import JsonSessionStore
 
 # ---------------------------------------------------------------------------
@@ -23,6 +23,34 @@ def _make_deposition(tmp_path, experiment_type=ExperimentType.XRAY):
         experiment_type=experiment_type,
         _base_dir=tmp_path,
     )
+
+
+# ---------------------------------------------------------------------------
+# list_sessions
+# ---------------------------------------------------------------------------
+
+def test_list_sessions_uses_configured_session_dir(monkeypatch, tmp_path):
+    session_dir = tmp_path / "configured-sessions"
+    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        f'[default]\nsession_dir = "{session_dir}"\n'
+    )
+    monkeypatch.setenv("HOME", str(tmp_path))
+
+    dep = deposit_init(
+        email="user@example.com",
+        users=["0000-0001-2345-6789"],
+        country=Country.UK,
+        experiment_type=ExperimentType.XRAY,
+    )
+
+    entries = list_sessions()
+
+    assert (session_dir / dep.session_id / "session.json").exists()
+    assert not (tmp_path / ".nextdep" / "sessions" / dep.session_id / "session.json").exists()
+    assert len(entries) == 1
+    assert entries[0][0].session_id == dep.session_id
 
 
 # ---------------------------------------------------------------------------

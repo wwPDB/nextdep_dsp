@@ -5,13 +5,14 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+from nextdep_dsp.config import DepositConfig
 from nextdep_dsp.enums import Country, ExperimentType, FileType
 from nextdep_dsp.session.models import LocalFile, LocalSession
 
 
 class JsonSessionStore:
     def __init__(self, session_id: str, base_dir: Path | None = None) -> None:
-        _base = base_dir or (Path.home() / ".nextdep" / "sessions")
+        _base = base_dir or Path(DepositConfig.load().session_dir)
         self._session_id = session_id
         self._json_path = _base / session_id / "session.json"
         self._json_path.parent.mkdir(parents=True, exist_ok=True)

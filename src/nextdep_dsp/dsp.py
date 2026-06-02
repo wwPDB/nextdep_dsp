@@ -7,6 +7,7 @@ from pathlib import Path
 
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.checks.runner import CheckRunner
+from nextdep_dsp.config import DepositConfig
 from nextdep_dsp.deposition.deposit_api import DepositApi
 from nextdep_dsp.deposition.models import DepositError, DepositStatus, Experiment
 from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
@@ -33,7 +34,7 @@ def list_sessions(base_dir: Path | None = None) -> list[tuple[LocalSession, list
     Returns:
         List of (LocalSession, files) pairs, newest first.
     """
-    _base = base_dir or (Path.home() / ".nextdep" / "sessions")
+    _base = base_dir or Path(DepositConfig.load().session_dir)
     if not _base.exists():
         return []
 
