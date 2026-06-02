@@ -250,3 +250,69 @@ def test_load_config_path_override_reads_from_given_file(tmp_path):
     cfg = DepositConfig.load(config_path=cfg_file)
     assert cfg.api_key == "custom-key"
     assert cfg.config_path == cfg_file
+
+
+def test_read_auth_entry_returns_none_when_key_absent(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('[default]\nhostname = "https://example.com"\n')
+    cfg = DepositConfig(config_path=cfg_file)
+    assert cfg.read_auth_entry("example_com") is None
+
+
+def test_read_auth_entry_returns_dict_when_present(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        '[default]\n[auths.example_com]\naccess_token = "tok"\nrefresh_token = "ref"\n'
+    )
+    cfg = DepositConfig(config_path=cfg_file)
+    assert cfg.read_auth_entry("example_com") == {"access_token": "tok", "refresh_token": "ref"}
+
+
+def test_write_auth_entry_creates_entry_and_preserves_default(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('[default]\nhostname = "https://example.com"\n')
+    cfg = DepositConfig(config_path=cfg_file)
+    cfg.write_auth_entry("example_com", {"access_token": "a", "refresh_token": "r"})
+    text = cfg_file.read_text()
+    assert "[auths.example_com]" in text
+    assert 'access_token = "a"' in text
+    assert "[default]" in text
+
+
+def test_write_auth_entry_updates_existing_entry(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        '[default]\n[auths.example_com]\naccess_token = "old"\nrefresh_token = "old_r"\n'
+    )
+    cfg = DepositConfig(config_path=cfg_file)
+    cfg.write_auth_entry("example_com", {"access_token": "new", "refresh_token": "new_r"})
+    assert cfg.read_auth_entry("example_com") == {"access_token": "new", "refresh_token": "new_r"}
+
+
+def test_delete_auth_entry_removes_entry_and_preserves_rest(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        '[default]\nhostname = "https://example.com"\n'
+        '[auths.example_com]\naccess_token = "a"\nrefresh_token = "r"\n'
+    )
+    cfg = DepositConfig(config_path=cfg_file)
+    cfg.delete_auth_entry("example_com")
+    assert cfg.read_auth_entry("example_com") is None
+    assert "[default]" in cfg_file.read_text()
+
+
+def test_delete_auth_entry_is_noop_when_key_absent(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text('[default]\nhostname = "https://example.com"\n')
+    original = cfg_file.read_text()
+    cfg = DepositConfig(config_path=cfg_file)
+    cfg.delete_auth_entry("nonexistent")
+    assert cfg_file.read_text() == original
+
+
+def test_write_auth_entry_creates_file_and_parent_dirs_if_missing(tmp_path):
+    cfg_file = tmp_path / "subdir" / "config.toml"
+    cfg = DepositConfig(config_path=cfg_file)
+    cfg.write_auth_entry("example_com", {"access_token": "a", "refresh_token": "r"})
+    assert cfg_file.exists()
+    assert cfg.read_auth_entry("example_com") == {"access_token": "a", "refresh_token": "r"}

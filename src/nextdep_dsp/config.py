@@ -5,6 +5,8 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Callable
 
+import tomli_w
+
 try:
     import tomllib
 except ImportError:
@@ -83,3 +85,46 @@ class DepositConfig:
                 merged[key] = value
 
         return cls(**merged)  # type: ignore[arg-type]
+
+    def _read_toml(self) -> dict:
+        if not self.config_path.exists():
+            return {}
+        try:
+            with self.config_path.open("rb") as fp:
+                return tomllib.load(fp)
+        except tomllib.TOMLDecodeError as exc:
+            raise ConfigError(f"Failed to parse {self.config_path}: {exc}") from exc
+
+    def _write_toml(self, data: dict) -> None:
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.config_path.with_suffix(".toml.tmp")
+        try:
+            tmp.write_text(tomli_w.dumps(data), encoding="utf-8")
+            os.replace(tmp, self.config_path)
+        except Exception:
+            tmp.unlink(missing_ok=True)
+            raise
+
+    def read_auth_entry(self, key: str) -> dict | None:
+        data = self._read_toml()
+        auths = data.get("auths", {})
+        if not isinstance(auths, dict):
+            raise ConfigError("Malformed [auths] section in config.toml")
+        entry = auths.get(key)
+        return entry if isinstance(entry, dict) else None
+
+    def write_auth_entry(self, key: str, entry: dict) -> None:
+        data = self._read_toml()
+        auths = data.setdefault("auths", {})
+        if not isinstance(auths, dict):
+            raise ConfigError("Malformed [auths] section in config.toml")
+        auths[key] = entry
+        self._write_toml(data)
+
+    def delete_auth_entry(self, key: str) -> None:
+        data = self._read_toml()
+        auths = data.get("auths")
+        if not isinstance(auths, dict) or key not in auths:
+            return
+        del auths[key]
+        self._write_toml(data)
