@@ -103,12 +103,12 @@ class DepositConfig:
                 merged[key] = value
 
         # Load tokens from [auths.<fqdn>] unless explicitly overridden via kwargs
+        # If either token was explicitly overridden, skip file-based token loading entirely.
         if "access_token" not in merged and "refresh_token" not in merged:
-            hostname_val = str(merged.get("hostname", cls.__dataclass_fields__["hostname"].default))
+            hostname_val = str(merged.get("hostname", next(f.default for f in fields(cls) if f.name == "hostname")))
             fqdn_key = _hostname_to_fqdn_key(hostname_val)
             if fqdn_key:
-                raw_full = cls._load_toml_file(merged["config_path"])  # type: ignore[arg-type]
-                entry = raw_full.get("auths", {}).get(fqdn_key)
+                entry = raw.get("auths", {}).get(fqdn_key)
                 if isinstance(entry, dict):
                     acc = entry.get("access_token")
                     ref = entry.get("refresh_token")

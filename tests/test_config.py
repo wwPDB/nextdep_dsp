@@ -369,3 +369,13 @@ def test_deposit_config_constructor_accepts_token_fields():
     cfg = DepositConfig(access_token="tok", refresh_token="ref")
     assert cfg.access_token == "tok"
     assert cfg.refresh_token == "ref"
+
+
+def test_load_raises_config_error_when_only_one_token_present(tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        '[default]\nhostname = "https://deposit.wwpdb.org/deposition"\n'
+        '[auths.deposit_wwpdb_org]\naccess_token = "acc"\n'
+    )
+    with pytest.raises(ConfigError, match="Malformed token"):
+        DepositConfig.load(config_path=cfg_file)
