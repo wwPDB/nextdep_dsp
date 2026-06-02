@@ -235,3 +235,18 @@ def test_schema_base_url_env_override(monkeypatch):
     monkeypatch.setenv("ONEDEP_SCHEMA_URL", "http://localhost:8080/schemas")
     cfg = DepositConfig.load()
     assert cfg.schema_base_url == "http://localhost:8080/schemas"
+
+
+def test_default_config_path_is_nextdep_toml(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    cfg = DepositConfig()
+    expected = tmp_path / ".config" / "nextdep" / "config.toml"
+    assert cfg.config_path == expected
+
+
+def test_load_config_path_override_reads_from_given_file(tmp_path):
+    cfg_file = tmp_path / "custom.toml"
+    cfg_file.write_text('[default]\napi_key = "custom-key"\n')
+    cfg = DepositConfig.load(config_path=cfg_file)
+    assert cfg.api_key == "custom-key"
+    assert cfg.config_path == cfg_file

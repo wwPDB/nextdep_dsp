@@ -31,12 +31,16 @@ def config_file(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def config() -> DepositConfig:
-    return DepositConfig(hostname="https://deposit.wwpdb.org/deposition", ssl_verify=True)
+def config(config_file: Path) -> DepositConfig:
+    return DepositConfig(
+        hostname="https://deposit.wwpdb.org/deposition",
+        ssl_verify=True,
+        config_path=config_file,
+    )
 
 
 def test_store_tokens_writes_config_toml(config: DepositConfig, config_file: Path):
-    store = TokenStore(config=config, config_path=config_file)
+    store = TokenStore(config=config)
     store.store_tokens("access123", "refresh456")
     text = config_file.read_text()
     assert "[auths.deposit_wwpdb_org]" in text
@@ -49,8 +53,8 @@ def test_store_tokens_writes_config_toml(config: DepositConfig, config_file: Pat
 def test_fqdn_key_excludes_scheme_port_and_path(tmp_path: Path):
     config_file = tmp_path / "config.toml"
     config_file.write_text("[default]\n")
-    config = DepositConfig(hostname="https://deposit.wwpdb.org:443/deposition")
-    store = TokenStore(config=config, config_path=config_file)
+    config = DepositConfig(hostname="https://deposit.wwpdb.org:443/deposition", config_path=config_file)
+    store = TokenStore(config=config)
     store.store_tokens("access", "refresh")
     text = config_file.read_text()
     assert "[auths.deposit_wwpdb_org]" in text
@@ -60,8 +64,8 @@ def test_fqdn_key_excludes_scheme_port_and_path(tmp_path: Path):
 def test_multiple_fqdns_are_isolated(tmp_path: Path):
     config_file = tmp_path / "config.toml"
     config_file.write_text("[default]\n")
-    first = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition"), config_file)
-    second = TokenStore(DepositConfig(hostname="https://sequence.wwpdb.org/api"), config_file)
+    first = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition", config_path=config_file))
+    second = TokenStore(DepositConfig(hostname="https://sequence.wwpdb.org/api", config_path=config_file))
     first.store_tokens(_make_jwt(3600), "refresh-a")
     second.store_tokens(_make_jwt(3600), "refresh-b")
     assert first._read_entry()["refresh_token"] == "refresh-a"
@@ -70,7 +74,7 @@ def test_multiple_fqdns_are_isolated(tmp_path: Path):
 
 def test_get_access_token_returns_unexpired_token_without_network(config: DepositConfig, config_file: Path):
     token = _make_jwt(3600)
-    store = TokenStore(config=config, config_path=config_file)
+    store = TokenStore(config=config)
     store.store_tokens(token, "refresh")
     assert store.get_access_token() == token
 
@@ -81,8 +85,11 @@ def test_get_access_token_refreshes_expired_token(tmp_path: Path, httpserver):
     expired = _make_jwt(-60)
     fresh = _make_jwt(3600)
     store = TokenStore(
-        config=DepositConfig(hostname=httpserver.url_for("/deposition").rstrip("/"), ssl_verify=False),
-        config_path=config_file,
+        config=DepositConfig(
+            hostname=httpserver.url_for("/deposition").rstrip("/"),
+            ssl_verify=False,
+            config_path=config_file,
+        ),
     )
     store.store_tokens(expired, "old-refresh")
     httpserver.expect_request(
@@ -98,8 +105,11 @@ def test_refresh_401_explains_manual_token_required(tmp_path: Path, httpserver):
     config_file = tmp_path / "config.toml"
     config_file.write_text("[default]\n")
     store = TokenStore(
-        config=DepositConfig(hostname=httpserver.url_for("/deposition").rstrip("/"), ssl_verify=False),
-        config_path=config_file,
+        config=DepositConfig(
+            hostname=httpserver.url_for("/deposition").rstrip("/"),
+            ssl_verify=False,
+            config_path=config_file,
+        ),
     )
     store.store_tokens(_make_jwt(-60), "bad-refresh")
     httpserver.expect_request("/deposition/auth/tokens/refresh", method="POST").respond_with_data(status=401)
@@ -111,8 +121,11 @@ def test_revoke_posts_refresh_token_and_clears_local_storage(tmp_path: Path, htt
     config_file = tmp_path / "config.toml"
     config_file.write_text("[default]\n")
     store = TokenStore(
-        config=DepositConfig(hostname=httpserver.url_for("/deposition").rstrip("/"), ssl_verify=False),
-        config_path=config_file,
+        config=DepositConfig(
+            hostname=httpserver.url_for("/deposition").rstrip("/"),
+            ssl_verify=False,
+            config_path=config_file,
+        ),
     )
     access = _make_jwt(3600)
     store.store_tokens(access, "refresh")
@@ -130,6 +143,6 @@ def test_revoke_posts_refresh_token_and_clears_local_storage(tmp_path: Path, htt
 def test_malformed_auth_table_raises_auth_error(tmp_path: Path):
     config_file = tmp_path / "config.toml"
     config_file.write_text("[default]\n[auths.deposit_wwpdb_org]\naccess_token = 123\n")
-    store = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition"), config_file)
+    store = TokenStore(DepositConfig(hostname="https://deposit.wwpdb.org/deposition", config_path=config_file))
     with pytest.raises(AuthError, match="Malformed token data"):
         store.get_access_token()

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import time
-from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import jwt as pyjwt
@@ -17,15 +16,13 @@ except ImportError:
 from nextdep_dsp.config import DepositConfig
 from nextdep_dsp.exceptions import AuthError
 
-_DEFAULT_CONFIG_PATH = Path.home() / ".config" / "nextdep" / "config.toml"
 _REFRESH_PATH = "auth/tokens/refresh"
 _REVOKE_PATH = "auth/tokens/revoke"
 
 
 class TokenStore:
-    def __init__(self, config: DepositConfig, config_path: Path | None = None) -> None:
+    def __init__(self, config: DepositConfig) -> None:
         self._config = config
-        self._config_path = config_path or _DEFAULT_CONFIG_PATH
 
     def store_tokens(self, access_token: str, refresh_token: str) -> None:
         data = self._read_config()
@@ -121,10 +118,11 @@ class TokenStore:
         return {"access_token": access_token, "refresh_token": refresh_token}
 
     def _read_config(self) -> dict:
-        if not self._config_path.exists():
+        config_path = self._config.config_path
+        if not config_path.exists():
             return {}
         try:
-            with self._config_path.open("rb") as fp:
+            with config_path.open("rb") as fp:
                 raw = tomllib.load(fp)
         except tomllib.TOMLDecodeError as exc:
             raise AuthError(f"Failed to parse token config: {exc}") from exc
@@ -133,11 +131,12 @@ class TokenStore:
         return raw
 
     def _write_config(self, data: dict) -> None:
-        self._config_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self._config_path.with_suffix(".toml.tmp")
+        config_path = self._config.config_path
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = config_path.with_suffix(".toml.tmp")
         try:
             tmp.write_text(tomli_w.dumps(data))
-            os.replace(tmp, self._config_path)
+            os.replace(tmp, config_path)
         except Exception:
             tmp.unlink(missing_ok=True)
             raise
