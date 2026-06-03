@@ -18,10 +18,6 @@ from typing import Annotated, Optional
 import typer
 from rich.console import Console
 
-from nextdep_dsp.deposition.deposit_api import DepositApi
-from nextdep_dsp.deposition.enum import Country, EMSubType, ExperimentType, FileType
-from nextdep_dsp.deposition.models import DepositStatus
-
 app = typer.Typer()
 sessions_app = typer.Typer(help="Manage local deposition sessions.")
 app.add_typer(sessions_app, name="sessions")
@@ -134,11 +130,7 @@ def sigma(func):
 
 def verify_exp_type(exptype: str) -> bool:
     """Verify experiment type enum"""
-    exptypes = []
-    for e in ExperimentType:
-        exptypes.append(e.value)
-    if exptype not in exptypes:
-        raise ValueError("Invalid experiment type, options are: " + ", ".join([exptype for exptype in exptypes]))
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
@@ -172,21 +164,13 @@ def verify_bmrb_id(bmrb_id: str) -> bool:
 
 def verify_country(country: str) -> bool:
     """Verify country enum"""
-    countries = []
-    for c in Country:
-        countries.append(c.value)
-    if country not in countries:
-        raise ValueError("Invalid country, options are: " + ", ".join([country for country in countries]))
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
 def verify_subtype(subtype: str) -> bool:
     """Verify EM subtype enum"""
-    subtypes = []
-    for s in EMSubType:
-        subtypes.append(s.value)
-    if subtype not in subtypes:
-        raise ValueError("Invalid subtype, options are: " + ", ".join([subtype for subtype in subtypes]))
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
@@ -198,28 +182,19 @@ def verify_dep_id(dep_id: str) -> bool:
     return True
 
 
-def get_country_enum(country_string: str) -> Country:
+def get_country_enum(country_string: str):
     """Get Country enum from string"""
-    for country in Country:
-        if country.value == country_string:
-            return country
-    raise ValueError("Invalid country, options are: " + ", ".join([country.value for country in Country]))
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
 
 
-def get_subtype_enum(subtype_string: str) -> EMSubType:
+def get_subtype_enum(subtype_string: str):
     """Get EMSubType enum from string"""
-    for subtype in EMSubType:
-        if subtype.value == subtype_string:
-            return subtype
-    raise ValueError("Invalid subtype, options are: " + ", ".join([subtype.value for subtype in EMSubType]))
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
 
 
-def get_file_type_enum(file_type_string: str) -> FileType:
+def get_file_type_enum(file_type_string: str):
     """Get FileType enum from string"""
-    for file_type in FileType:
-        if file_type.value == file_type_string:
-            return file_type
-    raise ValueError("Invalid file type, options are: " + ", ".join([file_type.value for file_type in FileType]))
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
 
 
 @app.command()
@@ -236,111 +211,35 @@ def create(
     sf_only: Optional[bool] = None,
 ) -> bool:
     """Create deposition"""
-    api = DepositApi()
-    countryEnum = get_country_enum(country)
-    if exptype == "xray":
-        deposition = api.create_xray_deposition(email=email, users=user, country=countryEnum, password=password)
-    elif exptype == "em":
-        subtypeEnum = get_subtype_enum(subtype)
-        deposition = api.create_em_deposition(
-            email=email,
-            users=user,
-            country=countryEnum,
-            subtype=subtypeEnum,
-            coordinates=coords,
-            related_emdb=related_id,
-            password=password,
-        )
-    elif exptype == "nmr":
-        deposition = api.create_nmr_deposition(
-            email=email,
-            users=user,
-            country=countryEnum,
-            password=password,
-            coordinates=coords,
-            related_bmrb=related_id,
-        )
-    elif exptype == "ssnmr":
-        deposition = api.create_ssnmr_deposition(
-            email=email,
-            users=user,
-            country=countryEnum,
-            password=password,
-            coordinates=coords,
-            related_bmrb=related_id,
-        )
-    elif exptype == "ec":
-        deposition = api.create_ec_deposition(
-            email=email,
-            users=user,
-            country=countryEnum,
-            password=password,
-            coordinates=coords,
-            sf_only=sf_only,
-            related_emdb=related_id,
-        )
-    elif exptype == "fiber":
-        deposition = api.create_fiber_deposition(email=email, users=user, country=countryEnum, password=password)
-    elif exptype == "neutron":
-        deposition = api.create_neutron_deposition(email=email, users=user, country=countryEnum, password=password)
-    if not deposition:
-        raise ValueError("Failed to create deposition")
-    dep_id = deposition.dep_id
-    console.print(dep_id)
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
 @app.command()
 def upload(dep_id: str, file_path: str, file_type: str, overwrite: bool = False) -> bool:
     """Upload file to OneDep system"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-    file_type_enum = get_file_type_enum(file_type)
-    api = DepositApi()
-    file = api.upload_file(dep_id, file_path, file_type_enum, overwrite)
-    file_id = file.file_id
-    console.print(f"Uploaded file: {file_id}")
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
 @app.command()
 def status(dep_id: str) -> bool:
     """Get status of deposition"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    api = DepositApi()
-    status = api.get_status(dep_id)
-    console.print(f"Status: {status}")
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
 @app.command()
 def remove_file(dep_id: str, file_id: int) -> bool:
     """Remove file from OneDep system"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    api = DepositApi()
-    file_removed = api.remove_file(dep_id, file_id)
-    if file_removed:
-        console.print(f"File {file_id} was removed from the deposition {dep_id}.")
-        return True
-    else:
-        console.print(f"Failed to remove file {file_id} from the deposition {dep_id}.")
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return False
 
 
 @app.command()
 def get_files(dep_id: str) -> bool:
     """Get file info from deposition"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    api = DepositApi()
-    files = api.get_files(dep_id)
-    for file in files:
-        console.print(file)
-        console.print("---------------------------------")
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
@@ -369,101 +268,36 @@ def process(
         copy_grant (bool, optional): Copy grant information. Defaults to False.
         copy_em_exp (bool, optional): Copy EM experiment data. Defaults to False.
     """
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    voxel = None
-    if voxels_json:
-        if not os.path.isfile(voxels_json):
-            raise FileNotFoundError(f"Voxel file not found: {voxels_json}")
-        with open(voxels_json, encoding="utf-8") as f:
-            voxel = json.load(f)
-    copy_elements = {
-        "copy_contact": False,
-        "copy_authors": False,
-        "copy_citation": False,
-        "copy_grant": False,
-        "copy_em_exp_data": False,
-    }
-    if copy_dep_id:
-        copy_elements = {
-            "copy_contact": copy_contact,
-            "copy_authors": copy_authors,
-            "copy_citation": copy_citation,
-            "copy_grant": copy_grant,
-            "copy_em_exp_data": copy_em_exp,
-        }
-        if copy_all:
-            copy_elements = {
-                "copy_contact": True,
-                "copy_authors": True,
-                "copy_citation": True,
-                "copy_grant": True,
-                "copy_em_exp_data": True,
-            }
-    api = DepositApi()
-    response = api.process(dep_id, voxel=voxel, copy_from_id=copy_dep_id, **copy_elements)
-    if isinstance(response, DepositStatus):
-        console.print(response.status)
-        return True
-    else:
-        console.print(response)
-        return False
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
+    return False
 
 
 @app.command()
 def get_deposition(dep_id: str) -> bool:
     """Get deposition from deposition id"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    api = DepositApi()
-    deposition = api.get_deposition(dep_id)
-    console.print(deposition)
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
 @app.command()
 def add_users(dep_id: str, orcid: Annotated[list[str], typer.Option()]) -> bool:
     """Add users to deposition"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    if not all(verify_orcid(o) for o in orcid):
-        raise ValueError(f"Invalid ORCID format for one or more provided ORCIDs: {orcid}")
-    api = DepositApi()
-    users = api.add_user(dep_id, orcid)
-    for user in users:
-        console.print(user)
-        console.print("---------------------------------")
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
 @app.command()
 def get_users(dep_id: str) -> bool:
     """Get users from deposition"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    api = DepositApi()
-    users = api.get_users(dep_id)
-    for user in users:
-        console.print(user)
-        console.print("---------------------------------")
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 
 @app.command()
 def remove_user(dep_id: str, orcid: str) -> bool:
     """Remove user from deposition"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    if not verify_orcid(orcid):
-        raise ValueError(f"Invalid ORCID format: {orcid}")
-    api = DepositApi()
-    user_removed = api.remove_user(dep_id, orcid)
-    if user_removed:
-        console.print(f"User {orcid} was removed from the deposition {dep_id}.")
-        return True
-    else:
-        console.print(f"Failed to remove user {orcid} from the deposition {dep_id}.")
-        return False
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
+    return False
 
 
 @app.command()
@@ -477,11 +311,7 @@ def update(
     description: str,
 ) -> bool:
     """Update data for previously deposited file"""
-    if not verify_dep_id(dep_id):
-        raise ValueError(f"Invalid deposition ID format: {dep_id}")
-    api = DepositApi()
-    file = api.update_metadata(dep_id, file_id, spacing_x, spacing_y, spacing_z, contour, description)
-    console.print(f"Updated file: {file}")
+    raise NotImplementedError("CLI support for deposition is no longer available; use the programmatic API instead")
     return True
 
 

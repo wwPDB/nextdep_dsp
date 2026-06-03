@@ -1,8 +1,7 @@
 import pytest
 
 from nextdep_dsp.config import DepositConfig, _parse_bool
-from nextdep_dsp.deposition.deposit_api import DepositApi
-from nextdep_dsp.deposition.exceptions import DepositApiException
+from nextdep_dsp.exceptions import ConfigError
 
 
 def test_parse_bool_true_values():
@@ -32,18 +31,17 @@ def test_load_defaults_when_no_file(monkeypatch, tmp_path):
     assert config.hostname == "https://deposit.wwpdb.org/deposition"
     assert config.ssl_verify is True
     assert config.redirect is True
-    assert config.api_key is None
+    assert config.access_token is None
 
 
 def test_load_reads_toml_file(monkeypatch, tmp_path):
     config_dir = tmp_path / ".config" / "nextdep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
-        '[default]\napi_key = "mykey"\nhostname = "https://example.com"\nssl_verify = false\nredirect = false\n'
+        '[default]\nhostname = "https://example.com"\nssl_verify = false\nredirect = false\n'
     )
     monkeypatch.setenv("HOME", str(tmp_path))
     config = DepositConfig.load()
-    assert config.api_key == "mykey"
     assert config.hostname == "https://example.com"
     assert config.ssl_verify is False
     assert config.redirect is False
@@ -52,10 +50,10 @@ def test_load_reads_toml_file(monkeypatch, tmp_path):
 def test_load_skips_missing_default_section(monkeypatch, tmp_path):
     config_dir = tmp_path / ".config" / "nextdep"
     config_dir.mkdir(parents=True)
-    (config_dir / "config.toml").write_text('[other]\napi_key = "ignored"\n')
+    (config_dir / "config.toml").write_text('[other]\nhostname = "https://other.example.com"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
     config = DepositConfig.load()
-    assert config.api_key is None  # [default] absent → skipped
+    assert config.access_token is None  # [default] absent → skipped
 
 
 def test_load_malformed_toml_raises(monkeypatch, tmp_path):
@@ -70,10 +68,10 @@ def test_load_malformed_toml_raises(monkeypatch, tmp_path):
 def test_load_ignores_unknown_keys_in_file(monkeypatch, tmp_path):
     config_dir = tmp_path / ".config" / "nextdep"
     config_dir.mkdir(parents=True)
-    (config_dir / "config.toml").write_text('[default]\napi_key = "mykey"\nunknown_key = "ignored"\n')
+    (config_dir / "config.toml").write_text('[default]\nunknown_key = "ignored"\nhostname = "https://example.com"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
     config = DepositConfig.load()
-    assert config.api_key == "mykey"  # did not raise
+    assert config.hostname == "https://example.com"  # did not raise
 
 
 def test_load_empty_hostname_in_file_falls_back(monkeypatch, tmp_path):
@@ -85,11 +83,11 @@ def test_load_empty_hostname_in_file_falls_back(monkeypatch, tmp_path):
     assert config.hostname == "https://deposit.wwpdb.org/deposition"
 
 
-def test_env_var_api_key(monkeypatch, tmp_path):
+def test_env_var_access_token(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
+    monkeypatch.setenv("ONEDEP_ACCESS_TOKEN", "env-token")
     config = DepositConfig.load()
-    assert config.api_key == "env-key"
+    assert config.access_token == "env-token"
 
 
 def test_env_var_hostname(monkeypatch, tmp_path):
@@ -108,7 +106,6 @@ def test_env_var_empty_hostname_falls_back(monkeypatch, tmp_path):
 
 def test_env_var_ssl_verify_false(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("ONEDEP_API_KEY", "key")
     monkeypatch.setenv("ONEDEP_SSL_VERIFY", "false")
     config = DepositConfig.load()
     assert config.ssl_verify is False
@@ -138,64 +135,26 @@ def test_env_var_invalid_bool_raises(monkeypatch, tmp_path):
 def test_env_var_overrides_file(monkeypatch, tmp_path):
     config_dir = tmp_path / ".config" / "nextdep"
     config_dir.mkdir(parents=True)
-    (config_dir / "config.toml").write_text('[default]\napi_key = "file-key"\n')
+    (config_dir / "config.toml").write_text('[default]\nhostname = "https://file.example.com"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
+    monkeypatch.setenv("ONEDEP_HOSTNAME", "https://env.example.com")
     config = DepositConfig.load()
-    assert config.api_key == "env-key"
+    assert config.hostname == "https://env.example.com"
 
 
 def test_constructor_overrides_env_var(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
-    config = DepositConfig.load(api_key="explicit-key")
-    assert config.api_key == "explicit-key"
+    monkeypatch.setenv("ONEDEP_HOSTNAME", "https://env.example.com")
+    config = DepositConfig.load(hostname="https://explicit.example.com")
+    assert config.hostname == "https://explicit.example.com"
 
 
-def test_deposit_api_raises_without_api_key(monkeypatch, tmp_path):
-    monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
-    with pytest.raises(DepositApiException, match="No API key configured"):
-        DepositApi(hostname="https://example.com")
-
-
-def test_deposit_api_raises_with_empty_api_key(monkeypatch, tmp_path):
-    monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
-    with pytest.raises(DepositApiException, match="No API key configured"):
-        DepositApi(hostname="https://example.com", api_key="")
-
-
-def test_deposit_api_raises_with_empty_env_api_key(monkeypatch, tmp_path):
-    monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("ONEDEP_API_KEY", "")
-    with pytest.raises(DepositApiException, match="No API key configured"):
-        DepositApi(hostname="https://example.com")
-
-
-def test_deposit_api_ssl_verify_false_not_filtered(monkeypatch, tmp_path):
-    monkeypatch.setenv("HOME", str(tmp_path))
-    api = DepositApi(hostname="https://example.com", api_key="key", ssl_verify=False)
-    assert api._ssl_verify is False
-
-
-def test_deposit_api_uses_config_file(monkeypatch, tmp_path):
-    config_dir = tmp_path / ".config" / "nextdep"
-    config_dir.mkdir(parents=True)
-    (config_dir / "config.toml").write_text('[default]\napi_key = "file-key"\nhostname = "https://file.example.com"\n')
-    monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
-    api = DepositApi()
-    assert api._api_key == "file-key"
-    assert api._hostname == "https://file.example.com"
-
-from nextdep_dsp.exceptions import ConfigError
 
 
 def test_defaults_include_schema_and_session_dirs(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
     cfg = DepositConfig()
-    assert cfg.api_key is None
+    assert cfg.access_token is None
     assert cfg.hostname == "https://deposit.wwpdb.org/deposition"
     assert cfg.ssl_verify is True
     assert cfg.redirect is True
@@ -205,24 +164,24 @@ def test_defaults_include_schema_and_session_dirs(monkeypatch, tmp_path):
 
 
 def test_constructor_overrides(monkeypatch):
-    monkeypatch.delenv("ONEDEP_API_KEY", raising=False)
-    cfg = DepositConfig.load(api_key="test-key", ssl_verify=False)
-    assert cfg.api_key == "test-key"
+    monkeypatch.delenv("ONEDEP_HOSTNAME", raising=False)
+    cfg = DepositConfig.load(hostname="https://test.example.com", ssl_verify=False)
+    assert cfg.hostname == "https://test.example.com"
     assert cfg.ssl_verify is False
 
 
 def test_env_var_overrides(monkeypatch):
-    monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
+    monkeypatch.setenv("ONEDEP_HOSTNAME", "https://env.example.com")
     monkeypatch.setenv("ONEDEP_SSL_VERIFY", "false")
     cfg = DepositConfig.load()
-    assert cfg.api_key == "env-key"
+    assert cfg.hostname == "https://env.example.com"
     assert cfg.ssl_verify is False
 
 
 def test_constructor_beats_env_var(monkeypatch):
-    monkeypatch.setenv("ONEDEP_API_KEY", "env-key")
-    cfg = DepositConfig.load(api_key="override-key")
-    assert cfg.api_key == "override-key"
+    monkeypatch.setenv("ONEDEP_HOSTNAME", "https://env.example.com")
+    cfg = DepositConfig.load(hostname="https://override.example.com")
+    assert cfg.hostname == "https://override.example.com"
 
 
 def test_invalid_bool_env_var_raises_config_error(monkeypatch):
@@ -246,9 +205,9 @@ def test_default_config_path_is_nextdep_toml(monkeypatch, tmp_path):
 
 def test_load_config_path_override_reads_from_given_file(tmp_path):
     cfg_file = tmp_path / "custom.toml"
-    cfg_file.write_text('[default]\napi_key = "custom-key"\n')
+    cfg_file.write_text('[default]\nhostname = "https://custom.example.com"\n')
     cfg = DepositConfig.load(config_path=cfg_file)
-    assert cfg.api_key == "custom-key"
+    assert cfg.hostname == "https://custom.example.com"
     assert cfg.config_path == cfg_file
 
 
