@@ -44,7 +44,7 @@ class HttpApiClient:
         if self._auth_provider is not None:
             token = self._auth_provider.get_access_token()
         else:
-            token = getattr(self._config, "api_key", None) or ""
+            token = self._config.access_token or ""
         self._session.headers["Authorization"] = f"Bearer {token}"
 
     def _do(
