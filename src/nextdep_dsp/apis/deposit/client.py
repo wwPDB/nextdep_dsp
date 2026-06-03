@@ -10,11 +10,11 @@ import requests
 import urllib3
 
 from nextdep_dsp.apis.deposit.models import (
-    WwPDBDeposition,
     DepositedFile,
     DepositError,
     DepositStatus,
     Experiment,
+    WwPDBDeposition,
 )
 from nextdep_dsp.auths.types import AuthProvider
 from nextdep_dsp.config import DepositConfig

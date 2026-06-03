@@ -8,53 +8,61 @@
 
 | New file | Purpose |
 |---|---|
-| `src/nextdep_dsp/api/__init__.py` | Package marker |
-| `src/nextdep_dsp/api/enums.py` | `Status` enum (moved from `deposition/enum.py`) |
-| `src/nextdep_dsp/api/models.py` | Response models as `@dataclass` |
-| `src/nextdep_dsp/api/types.py` | `ApiClient` Protocol |
-| `src/nextdep_dsp/api/client.py` | `HttpApiClient` (consolidates `deposit_api.py` + `rest_adapter.py`) |
+| `src/nextdep_dsp/apis/__init__.py` | Top-level APIs package marker |
+| `src/nextdep_dsp/apis/deposit/__init__.py` | Deposit API package marker |
+| `src/nextdep_dsp/apis/deposit/enums.py` | `Status` enum (moved from `deposition/enum.py`) |
+| `src/nextdep_dsp/apis/deposit/models.py` | Response models as `@dataclass` |
+| `src/nextdep_dsp/apis/deposit/types.py` | `ApiClient` Protocol |
+| `src/nextdep_dsp/apis/deposit/client.py` | `HttpApiClient` (consolidates `deposit_api.py` + `rest_adapter.py`) |
 | `src/nextdep_dsp/dsp.py` | `Deposition` facade refactored with constructor DI |
 | `src/nextdep_dsp/__init__.py` | Updated public surface re-exports |
-| `tests/unit/api/test_models.py` | Model parsing unit tests |
-| `tests/unit/api/test_http_api_client.py` | HTTP client tests via `pytest-httpserver` |
+| `tests/unit/apis/deposit/test_models.py` | Model parsing unit tests |
+| `tests/unit/apis/deposit/test_http_api_client.py` | HTTP client tests via `pytest-httpserver` |
 | `tests/unit/test_deposition_facade.py` | Facade DI tests with stubs |
 
 **Deleted:** `src/nextdep_dsp/deposition/` (entire package — 7 files)
 
----
-
-## Task 1 — Create the `api` package skeleton
-
-Create `src/nextdep_dsp/api/__init__.py` as an empty file.
-
-Create `tests/unit/api/__init__.py` as an empty file.
 
 ---
 
-## Task 2 — `api/enums.py`: move the `Status` enum
+## Task 1 — Create the `apis/deposit` package skeleton
 
-Create `src/nextdep_dsp/api/enums.py`:
+Create `src/nextdep_dsp/apis/__init__.py` as an empty file.
+
+Create `src/nextdep_dsp/apis/deposit/__init__.py` as an empty file.
+
+Create `tests/unit/apis/__init__.py` as an empty file.
+
+Create `tests/unit/apis/deposit/__init__.py` as an empty file.
+
+---
+
+## Task 2 — `apis/deposit/enums.py`: move the `Status` enum
+
+Create `src/nextdep_dsp/apis/deposit/enums.py`:
 
 ```python
 import enum
 
 
 class Status(enum.Enum):
-    DEP = "1"
-    PROC = "2"
-    AUTH = "3"
-    REPL = "4"
-    AUCO = "5"
-    AUXS = "6"
-    AUXU = "7"
-    HOLD = "8"
-    HPUB = "9"
-    OBS = "10"
-    POLC = "11"
-    REL = "12"
-    REUP = "13"
-    WAIT = "14"
-    WDRN = "15"
+    # Values are never used for parsing; the API sends names (e.g. "DEP").
+    # Parse with Status["DEP"], not Status("1").
+    DEP = enum.auto()
+    PROC = enum.auto()
+    AUTH = enum.auto()
+    REPL = enum.auto()
+    AUCO = enum.auto()
+    AUXS = enum.auto()
+    AUXU = enum.auto()
+    HOLD = enum.auto()
+    HPUB = enum.auto()
+    OBS = enum.auto()
+    POLC = enum.auto()
+    REL = enum.auto()
+    REUP = enum.auto()
+    WAIT = enum.auto()
+    WDRN = enum.auto()
 ```
 
 Note: `ExperimentType`, `EMSubType`, `Country`, and `FileType` already live in
@@ -62,22 +70,20 @@ Note: `ExperimentType`, `EMSubType`, `Country`, and `FileType` already live in
 
 ---
 
-## Task 3 — `api/models.py`: dataclass response models
+## Task 3 — `apis/deposit/models.py`: dataclass response models
 
-Create `src/nextdep_dsp/api/models.py`. This replaces `deposition/models.py`.
+Create `src/nextdep_dsp/apis/deposit/models.py`. This replaces `deposition/models.py`.
 All models are converted to `@dataclass` with a `__post_init__` that handles
 API string coercion so that callers never need to worry about raw API types.
 
 Key behavioural rules carried over from the PoC:
-- `Deposit.status` arrives from the API as an enum **name** string (e.g. `"DEP"`),
+- `WwPDBDeposition.status` arrives from the API as an enum **name** string (e.g. `"DEP"`),
   not as the enum value string (`"1"`). Use `Status[status]` to parse it.
-- `Deposit.pdb_id` / `emdb_id` / `bmrb_id`: the API sends `"?"` for absent IDs;
+- `WwPDBDeposition.pdb_id` / `emdb_id` / `bmrb_id`: the API sends `"?"` for absent IDs;
   these must be normalised to `None`.
-- `Deposit.created` / `last_login`: ISO 8601 strings (`datetime.fromisoformat`).
+- `WwPDBDeposition.created` / `last_login`: ISO 8601 strings (`datetime.fromisoformat`).
 - `DepositedFile.created`: non-ISO format — `"%A, %B %d, %Y %H:%M:%S"` (e.g.
   `"Monday, January 01, 2024 12:00:00"`).
-- `DepositedFilesSet` keeps its custom iterator protocol (`__getitem__`, `__len__`,
-  `__iter__`, `__next__`) — keep it as a regular class, not a dataclass.
 - Internal-only `Response` class from the PoC is **not** included here; it is
   now private to `HttpApiClient`.
 
@@ -88,7 +94,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import ClassVar, Union
 
-from nextdep_dsp.api.enums import Status
+from nextdep_dsp.apis.deposit.enums import Status
 from nextdep_dsp.enums import EMSubType, ExperimentType, FileType
 
 
@@ -113,7 +119,7 @@ class Experiment:
         if self.related_bmrb is not None:
             self.related_bmrb = str(self.related_bmrb)
 
-    def json(self) -> dict:
+    def to_dict(self) -> dict:
         out: dict = {"type": self.exp_type.value, "coordinates": self.coordinates}
         if self.subtype:
             out["subtype"] = self.subtype.value
@@ -172,7 +178,7 @@ class EmMapMetadata:
 
 
 @dataclass
-class Deposit:
+class WwPDBDeposition:
     dep_id: str
     email: str
     pdb_id: str | None
@@ -218,29 +224,6 @@ class Deposit:
 
 
 @dataclass
-class Depositor:
-    orcid: str
-    user_id: int
-    full_name: str
-    last_login: datetime | None = None
-    date_joined: datetime | None = None
-    depositions: list[Deposit] = field(default_factory=list)
-
-    def __post_init__(self) -> None:
-        self.orcid = str(self.orcid)
-        self.user_id = int(self.user_id)
-        self.full_name = str(self.full_name)
-        if isinstance(self.last_login, str):
-            self.last_login = datetime.fromisoformat(self.last_login)
-        if isinstance(self.date_joined, str):
-            self.date_joined = datetime.fromisoformat(self.date_joined)
-        self.depositions = [
-            Deposit(**d) if isinstance(d, dict) else d
-            for d in self.depositions
-        ]
-
-
-@dataclass
 class DepositedFile:
     file_id: int
     name: str
@@ -273,63 +256,6 @@ class DepositedFile:
         ]
 
 
-class DepositedFilesSet:
-    """Iterable collection of DepositedFile objects returned by get_files()."""
-
-    def __init__(
-        self,
-        files: list[dict],
-        errors: list | None = None,
-        warnings: list | None = None,
-    ) -> None:
-        self._files: list[DepositedFile] = []
-        self._errors = [
-            DepositError(**e) if isinstance(e, dict) else e
-            for e in (errors or [])
-            if e != ""
-        ]
-        self._warnings = [
-            DepositError(**w) if isinstance(w, dict) else w
-            for w in (warnings or [])
-            if w != ""
-        ]
-        self._index = 0
-        for f in files:
-            f = dict(f)
-            f["file_type"] = f.pop("type", f.get("file_type"))
-            f["file_id"] = f.pop("id", f.get("file_id"))
-            self._files.append(DepositedFile(**f))
-
-    def __getitem__(self, index: int) -> DepositedFile:
-        return self._files[index]
-
-    def __len__(self) -> int:
-        return len(self._files)
-
-    def __iter__(self) -> DepositedFilesSet:
-        self._index = 0
-        return self
-
-    def __next__(self) -> DepositedFile:
-        if self._index < len(self._files):
-            item = self._files[self._index]
-            self._index += 1
-            return item
-        raise StopIteration
-
-    @property
-    def files(self) -> list[DepositedFile]:
-        return self._files
-
-    @property
-    def errors(self) -> list[DepositError]:
-        return self._errors
-
-    @property
-    def warnings(self) -> list[DepositError]:
-        return self._warnings
-
-
 @dataclass
 class DepositStatus:
     status: str
@@ -349,17 +275,16 @@ class DepositStatus:
 
 ---
 
-## Task 4 — `api/types.py`: `ApiClient` Protocol
+## Task 4 — `apis/deposit/types.py`: `ApiClient` Protocol
 
-Create `src/nextdep_dsp/api/types.py`:
+Create `src/nextdep_dsp/apis/deposit/types.py`:
 
 ```python
 from typing import Protocol, Union
 
-from nextdep_dsp.api.models import (
-    Deposit,
+from nextdep_dsp.apis.deposit.models import (
+    WwPDBDeposition,
     DepositedFile,
-    DepositedFilesSet,
     DepositError,
     DepositStatus,
     Experiment,
@@ -375,11 +300,11 @@ class ApiClient(Protocol):
         country: Country,
         experiments: list[Experiment],
         password: str = "",
-    ) -> Deposit: ...
+    ) -> WwPDBDeposition: ...
 
-    def get_all_depositions(self) -> list[Deposit]: ...
+    def get_all_depositions(self) -> list[WwPDBDeposition]: ...
 
-    def get_deposition(self, dep_id: str) -> Deposit: ...
+    def get_deposition(self, dep_id: str) -> WwPDBDeposition: ...
 
     def upload_file(
         self,
@@ -400,7 +325,7 @@ class ApiClient(Protocol):
         description: str,
     ) -> DepositedFile: ...
 
-    def get_files(self, dep_id: str) -> DepositedFilesSet: ...
+    def get_files(self, dep_id: str) -> list[DepositedFile]: ...
 
     def remove_file(self, dep_id: str, file_id: int) -> bool: ...
 
@@ -411,9 +336,9 @@ class ApiClient(Protocol):
 
 ---
 
-## Task 5 — `api/client.py`: `HttpApiClient`
+## Task 5 — `apis/deposit/client.py`: `HttpApiClient`
 
-Create `src/nextdep_dsp/api/client.py`.
+Create `src/nextdep_dsp/apis/deposit/client.py`.
 
 This class consolidates `deposition/rest_adapter.py` and `deposition/deposit_api.py`
 into one coherent unit. It also replaces the `handle_invalid_deposit_site` decorator
@@ -450,12 +375,11 @@ from json import JSONDecodeError
 from typing import Union
 
 import requests
-import requests.packages
+import urllib3
 
-from nextdep_dsp.api.models import (
-    Deposit,
+from nextdep_dsp.apis.deposit.models import (
+    WwPDBDeposition,
     DepositedFile,
-    DepositedFilesSet,
     DepositError,
     DepositStatus,
     Experiment,
@@ -480,9 +404,7 @@ class HttpApiClient:
         self._logger = logger or logging.getLogger(__name__)
         self._base_url = f"{config.hostname}/api/{ver}/"
         if not config.ssl_verify:
-            requests.packages.urllib3.disable_warnings(
-                requests.packages.urllib3.exceptions.InsecureRequestWarning
-            )
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self._session = requests.Session()
         self._session.verify = config.ssl_verify
 
@@ -559,9 +481,16 @@ class HttpApiClient:
                     files=files,
                     timeout=300,
                 )
-                data_out = response.json()
-            except (requests.exceptions.RequestException, ValueError, JSONDecodeError) as e:
+            except requests.exceptions.RequestException as e:
                 raise ApiError("Retry after redirect failed", 503) from e
+            if response.status_code == 204:
+                return {}
+            if not (200 <= response.status_code <= 299):
+                raise ApiError(response.reason, response.status_code)
+            try:
+                data_out = response.json()
+            except (ValueError, JSONDecodeError) as e:
+                raise ApiError("Bad JSON in response after redirect", 502) from e
 
         return data_out
 
@@ -589,30 +518,30 @@ class HttpApiClient:
         country: Country,
         experiments: list[Experiment],
         password: str = "",
-    ) -> Deposit:
+    ) -> WwPDBDeposition:
         body: dict = {
             "email": email,
             "users": users,
             "country": country.value,
-            "experiments": [exp.json() for exp in experiments],
+            "experiments": [exp.to_dict() for exp in experiments],
         }
         if password:
             body["password"] = password
         data = self._post("depositions/new", data=body)
         data["dep_id"] = data.pop("id")
-        return Deposit(**data)
+        return WwPDBDeposition(**data)
 
-    def get_deposition(self, dep_id: str) -> Deposit:
+    def get_deposition(self, dep_id: str) -> WwPDBDeposition:
         data = self._get(f"depositions/{dep_id}")
         data["dep_id"] = data.pop("id")
-        return Deposit(**data)
+        return WwPDBDeposition(**data)
 
-    def get_all_depositions(self) -> list[Deposit]:
+    def get_all_depositions(self) -> list[WwPDBDeposition]:
         data = self._get("depositions/")
         depositions = []
         for item in data.get("items", []):
             item["dep_id"] = item.pop("id")
-            depositions.append(Deposit(**item))
+            depositions.append(WwPDBDeposition(**item))
         return depositions
 
     def upload_file(
@@ -661,9 +590,15 @@ class HttpApiClient:
         data["file_id"] = data.pop("id")
         return DepositedFile(**data)
 
-    def get_files(self, dep_id: str) -> DepositedFilesSet:
+    def get_files(self, dep_id: str) -> list[DepositedFile]:
         data = self._get(f"depositions/{dep_id}/files/")
-        return DepositedFilesSet(**data)
+        result = []
+        for f in data.get("files", []):
+            f = dict(f)
+            f["file_type"] = f.pop("type", f.get("file_type"))
+            f["file_id"] = f.pop("id", f.get("file_id"))
+            result.append(DepositedFile(**f))
+        return result
 
     def remove_file(self, dep_id: str, file_id: int) -> bool:
         self._delete(f"depositions/{dep_id}/files/{file_id}")
@@ -671,17 +606,15 @@ class HttpApiClient:
 
     def get_status(self, dep_id: str) -> Union[DepositStatus, DepositError]:
         data = self._get(f"depositions/{dep_id}/status")
-        try:
+        if "action" in data:
             return DepositStatus(**data)
-        except TypeError:
-            return DepositError(**data)
+        return DepositError(**data)
 
     def process(self, dep_id: str) -> Union[DepositStatus, DepositError]:
         data = self._post(f"depositions/{dep_id}/process", data={})
-        try:
+        if "action" in data:
             return DepositStatus(**data)
-        except TypeError:
-            return DepositError(**data)
+        return DepositError(**data)
 ```
 
 ---
@@ -743,9 +676,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from nextdep_dsp.api.client import HttpApiClient
-from nextdep_dsp.api.models import DepositError, DepositStatus, Experiment
-from nextdep_dsp.api.types import ApiClient
+from nextdep_dsp.apis.deposit.client import HttpApiClient
+from nextdep_dsp.apis.deposit.models import DepositError, DepositStatus, Experiment
+from nextdep_dsp.apis.deposit.types import ApiClient
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.checks.runner import JsonCheckRunner
 from nextdep_dsp.checks.types import CheckRunner
@@ -1020,13 +953,13 @@ class Deposition:
                 coordinates=self._session.coordinates if self._session.coordinates is not None else True,
                 subtype=self._session.em_subtype,
             )
-            remote_deposit = self._api_client.create_deposition(
+            remote_dep = self._api_client.create_deposition(
                 email=self._session.email,
                 users=self._session.users,
                 country=self._session.country,
                 experiments=[experiment],
             )
-            dep_id = remote_deposit.dep_id
+            dep_id = remote_dep.dep_id
             self._store.set_remote_dep_id(dep_id)
             self._session.remote_dep_id = dep_id
         else:
@@ -1086,9 +1019,9 @@ Replace the full contents of `src/nextdep_dsp/__init__.py`:
 ```python
 """nextdep_dsp — Deposition Software Provider library for OneDep."""
 
-from nextdep_dsp.api.enums import Status
-from nextdep_dsp.api.models import DepositError, DepositStatus
-from nextdep_dsp.api.types import ApiClient
+from nextdep_dsp.apis.deposit.enums import Status
+from nextdep_dsp.apis.deposit.models import DepositError, DepositStatus
+from nextdep_dsp.apis.deposit.types import ApiClient
 from nextdep_dsp.auths.token import TokenStore
 from nextdep_dsp.auths.types import AuthProvider
 from nextdep_dsp.checks.report import CheckIssue, CheckReport, CheckSeverity, CifLocation
@@ -1132,12 +1065,12 @@ __all__ = [
 
 ## Task 8 — Tests
 
-### 8a. Shared test fixture in `tests/unit/api/conftest.py`
+### 8a. Shared test fixture in `tests/unit/apis/deposit/conftest.py`
 
 ```python
 import pytest
 from pytest_httpserver import HTTPServer
-from nextdep_dsp.api.client import HttpApiClient
+from nextdep_dsp.apis.deposit.client import HttpApiClient
 from nextdep_dsp.config import DepositConfig
 
 
@@ -1156,19 +1089,19 @@ def client(api_config: DepositConfig) -> HttpApiClient:
     return HttpApiClient(api_config)
 ```
 
-### 8b. `tests/unit/api/test_models.py`
+### 8b. `tests/unit/apis/deposit/test_models.py`
 
 ```python
 from datetime import datetime
 import pytest
-from nextdep_dsp.api.models import (
-    Deposit, DepositError, DepositedFile, DepositStatus, Experiment, PixelSpacing,
+from nextdep_dsp.apis.deposit.models import (
+    WwPDBDeposition, DepositError, DepositedFile, DepositStatus, Experiment, PixelSpacing,
 )
-from nextdep_dsp.api.enums import Status
+from nextdep_dsp.apis.deposit.enums import Status
 from nextdep_dsp.enums import ExperimentType, FileType
 
 
-def _deposit(**overrides) -> Deposit:
+def _deposit(**overrides) -> WwPDBDeposition:
     defaults = dict(
         dep_id="D_1", email="a@b.com",
         pdb_id="?", emdb_id="?", bmrb_id="?",
@@ -1177,7 +1110,7 @@ def _deposit(**overrides) -> Deposit:
         last_login="2024-01-01T00:00:00",
         site="pdbe", status="DEP",
     )
-    return Deposit(**{**defaults, **overrides})
+    return WwPDBDeposition(**{**defaults, **overrides})
 
 
 def test_deposit_normalises_question_mark_ids():
@@ -1233,16 +1166,16 @@ def test_deposit_error_coerces_strings():
     assert e.message == "99"
 ```
 
-### 8c. `tests/unit/api/test_http_api_client.py`
+### 8c. `tests/unit/apis/deposit/test_http_api_client.py`
 
 ```python
 import json
 import pytest
 from pytest_httpserver import HTTPServer
-from nextdep_dsp.api.client import HttpApiClient
-from nextdep_dsp.api.models import Deposit, DepositedFile, DepositStatus
+from nextdep_dsp.apis.deposit.client import HttpApiClient
+from nextdep_dsp.apis.deposit.models import WwPDBDeposition, DepositedFile, DepositStatus
 from nextdep_dsp.enums import Country, ExperimentType, FileType
-from nextdep_dsp.api.models import Experiment
+from nextdep_dsp.apis.deposit.models import Experiment
 from nextdep_dsp.exceptions import ApiError
 
 
@@ -1293,14 +1226,14 @@ def test_create_deposition(httpserver: HTTPServer, client: HttpApiClient):
     httpserver.expect_request("/api/v1/depositions/new", method="POST").respond_with_json(
         _DEPOSIT_RESPONSE
     )
-    deposit = client.create_deposition(
+    dep = client.create_deposition(
         email="test@example.com",
         users=["0000-0001-2345-6789"],
         country=Country.USA,
         experiments=[Experiment(exp_type=ExperimentType.XRAY)],
     )
-    assert isinstance(deposit, Deposit)
-    assert deposit.dep_id == "D_800001"
+    assert isinstance(dep, WwPDBDeposition)
+    assert dep.dep_id == "D_800001"
 
 
 def test_auth_provider_sets_bearer_token_before_request(httpserver: HTTPServer, api_config):
@@ -1372,20 +1305,20 @@ def test_204_returns_empty(httpserver: HTTPServer, client: HttpApiClient):
     assert result is True
 ```
 
-### 8d. `tests/unit/api/test_stub_api_client.py`
+### 8d. `tests/unit/apis/deposit/test_stub_api_client.py`
 
 Defines `StubApiClient` (shared by facade tests) and verifies structural compatibility.
 
 ```python
 from typing import Union
-from nextdep_dsp.api.models import (
-    Deposit, DepositedFile, DepositedFilesSet, DepositError, DepositStatus, Experiment,
+from nextdep_dsp.apis.deposit.models import (
+    WwPDBDeposition, DepositedFile, DepositError, DepositStatus, Experiment,
 )
 from nextdep_dsp.enums import Country, FileType
 
 
-def _stub_deposit(dep_id: str = "D_999", email: str = "test@example.com") -> Deposit:
-    return Deposit(
+def _stub_deposit(dep_id: str = "D_999", email: str = "test@example.com") -> WwPDBDeposition:
+    return WwPDBDeposition(
         dep_id=dep_id, email=email, pdb_id=None, emdb_id=None, bmrb_id=None,
         title="", hold_exp_date=None,
         created="2024-01-01T00:00:00",
@@ -1410,13 +1343,13 @@ class StubApiClient:
         self.deposited_files: list[str] = []
         self.processed: list[str] = []
 
-    def create_deposition(self, email, users, country, experiments, password="") -> Deposit:
+    def create_deposition(self, email, users, country, experiments, password="") -> WwPDBDeposition:
         return _stub_deposit(email=email)
 
-    def get_all_depositions(self) -> list[Deposit]:
+    def get_all_depositions(self) -> list[WwPDBDeposition]:
         return []
 
-    def get_deposition(self, dep_id: str) -> Deposit:
+    def get_deposition(self, dep_id: str) -> WwPDBDeposition:
         return _stub_deposit(dep_id=dep_id)
 
     def upload_file(self, dep_id, file_path, file_type, overwrite=False) -> DepositedFile:
@@ -1426,8 +1359,8 @@ class StubApiClient:
     def update_metadata(self, dep_id, file_id, spacing_x, spacing_y, spacing_z, contour, description) -> DepositedFile:
         return _stub_file(file_id=file_id)
 
-    def get_files(self, dep_id) -> DepositedFilesSet:
-        return DepositedFilesSet(files=[])
+    def get_files(self, dep_id) -> list[DepositedFile]:
+        return []
 
     def remove_file(self, dep_id, file_id) -> bool:
         return True
@@ -1447,7 +1380,7 @@ class StubApiClient:
 
 
 def test_stub_api_client_is_structurally_compatible():
-    from nextdep_dsp.api.types import ApiClient
+    from nextdep_dsp.apis.deposit.types import ApiClient
     # Protocol compatibility is verified at type-check time; at runtime just
     # confirm all required methods exist.
     stub = StubApiClient()
@@ -1468,7 +1401,7 @@ from pathlib import Path
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.dsp import deposit_init, deposit_resume
 from nextdep_dsp.enums import Country, ExperimentType, FileType
-from tests.unit.api.test_stub_api_client import StubApiClient
+from tests.unit.apis.deposit.test_stub_api_client import StubApiClient
 
 
 class StubCheckRunner:

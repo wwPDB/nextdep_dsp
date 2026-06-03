@@ -1,11 +1,11 @@
 from typing import Protocol, Union
 
 from nextdep_dsp.apis.deposit.models import (
-    WwPDBDeposition,
     DepositedFile,
     DepositError,
     DepositStatus,
     Experiment,
+    WwPDBDeposition,
 )
 from nextdep_dsp.enums import Country, FileType
 
