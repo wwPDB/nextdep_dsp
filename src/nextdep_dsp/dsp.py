@@ -5,13 +5,15 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from nextdep_dsp.apis.deposit.client import HttpApiClient
+from nextdep_dsp.apis.deposit.models import DepositError, DepositStatus, Experiment
+from nextdep_dsp.apis.deposit.types import ApiClient
 from nextdep_dsp.checks.report import CheckReport
 from nextdep_dsp.checks.runner import CheckRunner
+from nextdep_dsp.checks.types import CheckRunner as CheckRunnerProtocol
 from nextdep_dsp.config import DepositConfig
-from nextdep_dsp.deposition.deposit_api import DepositApi
-from nextdep_dsp.deposition.models import DepositError, DepositStatus, Experiment
 from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
-from nextdep_dsp.exceptions import SchemaError
+from nextdep_dsp.schemas.remote import RemoteSchemaProvider
 from nextdep_dsp.session.json_store import JsonSessionStore
 from nextdep_dsp.session.models import LocalFile, LocalSession
 from nextdep_dsp.session.types import SessionStore
@@ -26,15 +28,8 @@ def _md5_of_file(path: Path, chunk_size: int = 1 << 20) -> str:
 
 
 def list_sessions(base_dir: Path | None = None) -> list[tuple[LocalSession, list[LocalFile]]]:
-    """Return all local sessions with their registered files.
-
-    Args:
-        base_dir: Override session storage directory (for testing only).
-
-    Returns:
-        List of (LocalSession, files) pairs, newest first.
-    """
-    _base = base_dir or Path(DepositConfig.load().session_dir)
+    """Return all local sessions with their registered files, newest first."""
+    _base = base_dir or (Path.home() / ".nextdep" / "sessions")
     if not _base.exists():
         return []
 
@@ -62,7 +57,10 @@ def deposit_init(
     experiment_type: ExperimentType | None = None,
     em_subtype: EMSubType | str | None = None,
     coordinates: bool | None = None,
+    config: DepositConfig | None = None,
     _base_dir: Path | None = None,
+    _api_client: ApiClient | None = None,
+    _check_runner: CheckRunnerProtocol | None = None,
 ) -> Deposition:
     """Create a new local deposition session.
 
@@ -71,15 +69,24 @@ def deposit_init(
         users: List of ORCID IDs granted access to this deposition.
         country: Depositor country (use the Country enum).
         experiment_type: Experiment type (can be set later via set_experiment_type).
-        em_subtype: EM experiment subtype (required for EM depositions; can be set later via set_em_params).
-        coordinates: Whether coordinates are being deposited (EM/EC/NMR; can be set later via set_em_params).
+        em_subtype: EM experiment subtype (can be set later via set_em_params).
+        coordinates: Whether coordinates are being deposited (can be set later).
+        config: Optional pre-built DepositConfig; loaded from default sources if None.
         _base_dir: Override session storage directory (for testing only).
+        _api_client: Override API client (for testing only).
+        _check_runner: Override check runner (for testing only).
 
     Returns:
         A Deposition object representing the local session.
     """
+    config = config or DepositConfig.load()
     session_id = str(uuid.uuid4())
-    store = JsonSessionStore(session_id, base_dir=_base_dir)
+    base_dir = _base_dir or config.session_dir
+    store: SessionStore = JsonSessionStore(session_id, base_dir=base_dir)
+    api_client: ApiClient = _api_client or HttpApiClient(config)
+    check_runner: CheckRunnerProtocol = _check_runner or CheckRunner(
+        RemoteSchemaProvider(config.schema_base_url, config.schema_cache_dir)
+    )
     em_subtype_str = em_subtype.value if isinstance(em_subtype, EMSubType) else em_subtype
     session = LocalSession(
         session_id=session_id,
@@ -92,18 +99,24 @@ def deposit_init(
         coordinates=coordinates,
     )
     store.create_session(session)
-    return Deposition(store=store)
+    return Deposition(store=store, api_client=api_client, check_runner=check_runner)
 
 
 def deposit_resume(
     session_id: str,
+    config: DepositConfig | None = None,
     _base_dir: Path | None = None,
+    _api_client: ApiClient | None = None,
+    _check_runner: CheckRunnerProtocol | None = None,
 ) -> Deposition:
     """Resume an existing local deposition session.
 
     Args:
         session_id: The session_id returned by a previous deposit_init() call.
+        config: Optional pre-built DepositConfig; loaded from default sources if None.
         _base_dir: Override session storage directory (for testing only).
+        _api_client: Override API client (for testing only).
+        _check_runner: Override check runner (for testing only).
 
     Returns:
         A Deposition object for the existing session.
@@ -111,45 +124,29 @@ def deposit_resume(
     Raises:
         KeyError: If no session with the given session_id exists.
     """
-    store = JsonSessionStore(session_id, base_dir=_base_dir)
+    config = config or DepositConfig.load()
+    base_dir = _base_dir or config.session_dir
+    store: SessionStore = JsonSessionStore(session_id, base_dir=base_dir)
     store.get_session()  # raises KeyError if not found
-    return Deposition(store=store)
-
-
-class _UnavailableSchemaProvider:
-    def get_schema(self, schema_name: str) -> dict:
-        raise SchemaError(f"Schema {schema_name!r} not configured for facade checks")
-
-
-def _runner() -> CheckRunner:
-    return CheckRunner(schema_provider=_UnavailableSchemaProvider())
-
-
-def _check_required_files(files: list[LocalFile], experiment_type: ExperimentType | None, em_subtype: str | None = None) -> CheckReport:
-    return _runner().check_required_files(files, experiment_type, em_subtype)
-
-
-def _check_mmcif_file(file: LocalFile) -> CheckReport:
-    return _runner().check_mmcif_file(file)
-
-
-def _check_mmcif_category(file: LocalFile, category: str) -> CheckReport:
-    return _runner().check_mmcif_category(file, category)
-
-
-def _check_mmcif_field(file: LocalFile, category: str, field: str) -> CheckReport:
-    return _runner().check_mmcif_field(file, category, field)
-
-
-def _check_file_type(file: LocalFile, file_type: FileType) -> CheckReport:
-    return _runner().check_file_type(file, file_type)
+    api_client: ApiClient = _api_client or HttpApiClient(config)
+    check_runner: CheckRunnerProtocol = _check_runner or CheckRunner(
+        RemoteSchemaProvider(config.schema_base_url, config.schema_cache_dir)
+    )
+    return Deposition(store=store, api_client=api_client, check_runner=check_runner)
 
 
 class Deposition:
-    """Local deposition session. Created via deposit_init()."""
+    """Local deposition session. Created via deposit_init() or deposit_resume()."""
 
-    def __init__(self, store: SessionStore) -> None:
+    def __init__(
+        self,
+        store: SessionStore,
+        api_client: ApiClient,
+        check_runner: CheckRunnerProtocol,
+    ) -> None:
         self._store = store
+        self._api_client = api_client
+        self._check_runner = check_runner
         self._session = store.get_session()
 
     @property
@@ -172,31 +169,22 @@ class Deposition:
         em_subtype: EMSubType | str | None = None,
         coordinates: bool | None = None,
     ) -> None:
-        """Set EM-specific parameters for this deposition.
-
-        Args:
-            em_subtype: EM experiment subtype (e.g. EMSubType.SPA).
-            coordinates: Whether coordinates are being deposited.
-        """
+        """Set EM-specific parameters for this deposition."""
         em_subtype_str = em_subtype.value if isinstance(em_subtype, EMSubType) else em_subtype
         self._store.update_em_params(em_subtype_str, coordinates)
         self._session.em_subtype = em_subtype_str
         self._session.coordinates = coordinates
 
     def check_auth_key(self) -> bool:
-        """Return True if the configured API key is valid, False otherwise."""
+        """Return True if the configured credentials are valid, False otherwise."""
         try:
-            api = DepositApi()
-            api.get_all_depositions()
+            self._api_client.get_all_depositions()
             return True
-        except Exception:  # noqa: BLE001 - intentionally broad: covers auth errors and config issues; will be narrowed later
+        except Exception:  # noqa: BLE001
             return False
 
     def add_file(self, file_path: str, file_type: FileType) -> str:
         """Register a local file for this deposition.
-
-        The file path is stored as-is — the file is not copied. Do not
-        move or delete the file before calling deposit().
 
         Returns:
             A file_id (UUID string) to reference this file in check methods.
@@ -234,94 +222,77 @@ class Deposition:
         spacing_z: float,
         contour: float,
     ) -> None:
-        """Set voxel spacing and contour level for a map file.
-
-        Must be called for EM_MAP and EM_HALF_MAP files before deposit().
-
-        Args:
-            file_id: Local file ID returned by add_file().
-            spacing_x: Pixel spacing along X axis (Å).
-            spacing_y: Pixel spacing along Y axis (Å).
-            spacing_z: Pixel spacing along Z axis (Å).
-            contour: Contour level for the map.
-        """
+        """Set voxel spacing and contour level for a map file."""
         self._store.set_voxel_values(file_id, spacing_x, spacing_y, spacing_z, contour)
 
     def check_required_files(self) -> CheckReport:
         """Check that the session contains all required files for the experiment type."""
         files = self._store.get_all_files()
-        return _check_required_files(files, self._session.experiment_type, self._session.em_subtype)
+        return self._check_runner.check_required_files(
+            files, self._session.experiment_type, self._session.em_subtype
+        )
 
     def check_mmcif_file(self, file_id: str) -> CheckReport:
         """Check that the file identified by file_id is a valid mmCIF."""
         file = self._store.get_file(file_id)
-        return _check_mmcif_file(file)
+        return self._check_runner.check_mmcif_file(file)
 
     def check_mmcif_category(self, file_id: str, category: str) -> CheckReport:
         """Check that the mmCIF file contains the given category."""
         file = self._store.get_file(file_id)
-        return _check_mmcif_category(file, category)
+        return self._check_runner.check_mmcif_category(file, category)
 
     def check_mmcif_field(self, file_id: str, category: str, field: str) -> CheckReport:
         """Check that the mmCIF file contains the given field in the given category."""
         file = self._store.get_file(file_id)
-        return _check_mmcif_field(file, category, field)
+        return self._check_runner.check_mmcif_field(file, category, field)
 
     def check_file_type(self, file_id: str, file_type: FileType) -> CheckReport:
         """Check that the file matches the expected FileType."""
         file = self._store.get_file(file_id)
-        return _check_file_type(file, file_type)
+        return self._check_runner.check_file_type(file, file_type)
 
     def deposit(self) -> str:
         """Submit this deposition to the OneDep API.
 
-        Creates a remote deposition, uploads all registered files, and
-        triggers processing. Returns immediately without waiting for
-        processing to finish (non-blocking). Use get_status() to poll.
+        Creates a remote deposition, uploads all registered files, and triggers
+        processing. Returns immediately without waiting for processing to finish.
 
         Returns:
             The remote deposition ID (e.g. "D_8000000001").
 
         Raises:
-            ValueError: If experiment_type has not been set, or if this
-                session has already been deposited.
-            DepositApiException: If any API call fails.
+            ValueError: If experiment_type has not been set.
+            ApiError: If any API call fails.
         """
         if self._session.experiment_type is None:
             raise ValueError(
                 "experiment_type must be set before calling deposit(). "
                 "Use set_experiment_type() or pass experiment_type to deposit_init()."
             )
-        api = DepositApi()
         if self._session.remote_dep_id is None:
-            if self._session.experiment_type == ExperimentType.EM:
-                remote_deposit = api.create_em_deposition(
-                    email=self._session.email,
-                    users=self._session.users,
-                    country=self._session.country,
-                    subtype=self._session.em_subtype,
-                    coordinates=self._session.coordinates if self._session.coordinates is not None else True,
-                )
-            else:
-                experiment = Experiment(exp_type=self._session.experiment_type.value)
-                remote_deposit = api.create_deposition(
-                    email=self._session.email,
-                    users=self._session.users,
-                    country=self._session.country,
-                    experiments=[experiment],
-                )
-            dep_id = remote_deposit.dep_id
-            # Persist remote ID immediately so it survives any subsequent failure
+            experiment = Experiment(
+                exp_type=self._session.experiment_type,
+                coordinates=self._session.coordinates if self._session.coordinates is not None else True,
+                subtype=self._session.em_subtype,
+            )
+            remote_dep = self._api_client.create_deposition(
+                email=self._session.email,
+                users=self._session.users,
+                country=self._session.country,
+                experiments=[experiment],
+            )
+            dep_id = remote_dep.dep_id
             self._store.set_remote_dep_id(dep_id)
             self._session.remote_dep_id = dep_id
         else:
             dep_id = self._session.remote_dep_id
 
         for file in self._store.get_all_files():
-            deposited = api.upload_file(dep_id, file.file_path, file.file_type)
+            deposited = self._api_client.upload_file(dep_id, file.file_path, file.file_type)
             if file.voxel:
                 v = file.voxel
-                api.update_metadata(
+                self._api_client.update_metadata(
                     dep_id,
                     deposited.file_id,
                     spacing_x=v["spacing_x"],
@@ -330,18 +301,9 @@ class Deposition:
                     contour=v["contour"],
                     description="",
                 )
-        api.process(dep_id)
+
+        self._api_client.process(dep_id)
         return dep_id
-
-    def close(self) -> None:
-        """Close the underlying session store connection."""
-        self._store.close()
-
-    def __enter__(self) -> Deposition:
-        return self
-
-    def __exit__(self, *args: object) -> None:
-        self.close()
 
     def get_status(self) -> DepositStatus | DepositError:
         """Return the current processing status of the remote deposition.
@@ -354,9 +316,18 @@ class Deposition:
                 "deposit() has not been called yet for this session. "
                 "Call deposit() first to obtain a remote deposition ID."
             )
-        api = DepositApi()
-        return api.get_status(self._session.remote_dep_id)
+        return self._api_client.get_status(self._session.remote_dep_id)
 
     def get_experiment_file_types(self) -> list[FileType]:
         """Return the accepted file types for the current experiment type. (stub)"""
         return []
+
+    def close(self) -> None:
+        """Close the underlying session store connection."""
+        self._store.close()
+
+    def __enter__(self) -> Deposition:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.close()
