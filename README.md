@@ -12,61 +12,76 @@ Prepares data to be deposited into OneDep system through the Deposition API. JSO
 2. Environment variables (override file values)
 3. Keyword arguments passed to `DepositConfig.load()` (highest priority)
 
+After resolving the above, `load()` also reads the `[auths.<fqdn>]` section matching the resolved hostname and populates the `access_token` and `refresh_token` fields automatically (see [Authentication](#authentication)).
+
 The default values are:
 
-| Setting | Default |
-|---|---|
-| `api_key` | `None` |
-| `hostname` | `https://deposit.wwpdb.org/deposition` |
-| `ssl_verify` | `true` |
-| `redirect` | `true` |
-| `schema_base_url` | `https://schemas.wwpdb.org/nextdep` |
-| `schema_cache_dir` | `~/.nextdep/schemas` |
-| `session_dir` | `~/.nextdep/sessions` |
+| Field | Default | Source |
+|---|---|---|
+| `access_token` | `None` | `[auths.<fqdn>]` / override |
+| `refresh_token` | `None` | `[auths.<fqdn>]` / override |
+| `hostname` | `https://deposit.wwpdb.org/deposition` | `[default]` / env / override |
+| `ssl_verify` | `true` | `[default]` / env / override |
+| `redirect` | `true` | `[default]` / env / override |
+| `schema_base_url` | `https://schemas.wwpdb.org/nextdep` | `[default]` / env / override |
+| `schema_cache_dir` | `~/.nextdep/schemas` | `[default]` / override |
+| `session_dir` | `~/.nextdep/sessions` | `[default]` / override |
+| `config_path` | `~/.config/nextdep/config.toml` | override only |
 
 ### Config file
 
-Create `~/.config/nextdep/config.toml` with a `[default]` table:
+The config file has two distinct sections:
+
+- **`[default]`** — general settings (hostname, SSL, API key, etc.)
+- **`[auths.<fqdn>]`** — auth tokens for a specific host, keyed by hostname FQDN
+
+The FQDN key is derived from the hostname by stripping the URL scheme, port, and path, and replacing `.` and `-` with `_`. For example, `https://deposit.wwpdb.org/deposition` → `deposit_wwpdb_org`.
+
+A complete config file looks like:
 
 ```toml
 [default]
-api_key = "your.jwt.token"
-hostname = "https://onedep-depui-test.wwpdb.org/deposition"
-ssl_verify = false
+hostname = "https://deposit.wwpdb.org/deposition"
+ssl_verify = true
 redirect = true
 schema_base_url = "https://schemas.wwpdb.org/nextdep"
 schema_cache_dir = "/home/you/.nextdep/schemas"
 session_dir = "/home/you/.nextdep/sessions"
+
+[auths.deposit_wwpdb_org]
+access_token = "eyJ..."
+refresh_token = "opaque-string"
 ```
 
-Unknown keys are ignored. An empty `hostname` in the config file is ignored so the default hostname remains in effect. Invalid TOML raises `ConfigError`.
+The `[auths.<fqdn>]` section is written by `TokenStore.store_tokens()` — see [Authentication](#authentication). `access_token` and `refresh_token` are never read from `[default]`; they always come from the per-host `[auths]` table. Multiple hosts can coexist in the same file under separate `[auths.<fqdn>]` tables without interfering with each other.
 
-Or run the command line tool:
+`DepositConfig.load()` reads `[default]` first, then reads the `[auths.<fqdn>]` section that matches the resolved hostname and populates `access_token` and `refresh_token` into the returned config object.
 
-```bash
-nextdep_api_token set-api-key your.jwt.token
-```
+Unknown keys in `[default]` are ignored. An empty `hostname` is ignored so the default remains in effect. Invalid TOML raises `ConfigError`.
 
-Once set, load configuration with no arguments:
+Load configuration with no arguments once the file is in place:
 
 ```python
 from nextdep_dsp.config import DepositConfig
 
 cfg = DepositConfig.load()
+print(cfg.access_token)   # populated from [auths.deposit_wwpdb_org] if present
 ```
 
 ### Environment variables
 
-| Variable | Setting | Type |
+| Variable | Field | Type |
 |---|---|---|
-| `ONEDEP_API_KEY` | API JWT token | str |
-| `ONEDEP_HOSTNAME` | Deposition site URL | str |
-| `ONEDEP_SSL_VERIFY` | SSL verification | `true`, `false`, `1`, or `0` |
-| `ONEDEP_REDIRECT` | Follow site redirects | `true`, `false`, `1`, or `0` |
-| `ONEDEP_SCHEMA_URL` | Base URL for remote JSON schemas | str |
+| `ONEDEP_ACCESS_TOKEN` | `access_token` | str |
+| `ONEDEP_REFRESH_TOKEN` | `refresh_token` | str |
+| `ONEDEP_HOSTNAME` | `hostname` | str |
+| `ONEDEP_SSL_VERIFY` | `ssl_verify` | `true`, `false`, `1`, or `0` |
+| `ONEDEP_REDIRECT` | `redirect` | `true`, `false`, `1`, or `0` |
+| `ONEDEP_SCHEMA_URL` | `schema_base_url` | str |
 
 ```bash
-export ONEDEP_API_KEY="your.jwt.token"
+export ONEDEP_ACCESS_TOKEN="your.jwt.token"
+export ONEDEP_REFRESH_TOKEN="opaque-token"
 export ONEDEP_HOSTNAME="https://onedep-depui-test.wwpdb.org/deposition"
 export ONEDEP_SSL_VERIFY="false"
 export ONEDEP_SCHEMA_URL="http://localhost:8080/schemas"
@@ -90,6 +105,102 @@ cfg = DepositConfig.load(
     session_dir=Path("/tmp/nextdep-sessions"),
 )
 ```
+
+To inject tokens directly (e.g. in tests or embedded applications):
+
+```python
+cfg = DepositConfig.load(
+    access_token="eyJ...",
+    refresh_token="opaque-string",
+)
+```
+
+When either token is supplied as an override, `load()` skips reading the `[auths.<fqdn>]` section entirely.
+
+## Authentication
+
+OneDep uses short-lived JWT access tokens (30-minute TTL) paired with long-lived opaque refresh tokens (30-day TTL). The `TokenStore` class manages the full token lifecycle: storage, expiry detection, automatic refresh, and revocation.
+
+### Getting a token pair
+
+Tokens are generated manually by a logged-in user in the OneDep web UI. There is no programmatic login flow in this library. Once you have a token pair, pass it to `TokenStore.store_tokens()`:
+
+```python
+from nextdep_dsp.auths.token import TokenStore
+from nextdep_dsp.config import DepositConfig
+
+cfg = DepositConfig.load()
+store = TokenStore(config=cfg)
+store.store_tokens(
+    access_token="eyJ...",
+    refresh_token="opaque-string",
+)
+```
+
+This writes the tokens to the `[auths.<fqdn>]` section of the config file and updates the in-memory config fields. The FQDN key is derived from the resolved hostname by stripping the URL scheme, port, and path, and replacing `.` and `-` with `_`. For example, `https://deposit.wwpdb.org/deposition` becomes `deposit_wwpdb_org`.
+
+The resulting config file looks like:
+
+```toml
+[default]
+hostname = "https://deposit.wwpdb.org/deposition"
+
+[auths.deposit_wwpdb_org]
+access_token = "eyJ..."
+refresh_token = "opaque-string"
+```
+
+Multiple hosts can coexist in the same file under separate `[auths.<fqdn>]` tables.
+
+### Accessing tokens
+
+Call `get_access_token()` to retrieve a valid access token. If the stored token is expired or about to expire (within 60 seconds), `TokenStore` automatically calls the refresh endpoint and persists the rotated token pair before returning:
+
+```python
+token = store.get_access_token()   # refreshes transparently if needed
+```
+
+On next startup, `DepositConfig.load()` reads the `[auths.<fqdn>]` section matching the hostname and populates `access_token` and `refresh_token` into the config object. No extra call is needed:
+
+```python
+cfg = DepositConfig.load()
+print(cfg.access_token)   # populated from [auths.deposit_wwpdb_org]
+```
+
+### Token refresh
+
+Refresh is automatic inside `get_access_token()`, or can be triggered explicitly:
+
+```python
+new_access_token = store.refresh()
+```
+
+Refresh token rotation is mandatory: each successful refresh call invalidates the old refresh token and issues a new one. Both tokens are persisted to the config file immediately. If the refresh token is expired, revoked, or otherwise invalid, the server returns `401` and `TokenStore` raises `AuthError` with a message prompting the user to generate and paste a new token pair.
+
+### Revocation
+
+```python
+store.revoke()
+```
+
+This posts the current refresh token to the server's revoke endpoint and, on success (`204 No Content`), removes the `[auths.<fqdn>]` entry from the config file and clears the in-memory fields. After revocation, `get_access_token()` raises `AuthError`.
+
+To clear tokens locally without contacting the server:
+
+```python
+store.clear_tokens()
+```
+
+### Error handling
+
+All auth errors raise `nextdep_dsp.exceptions.AuthError`. Config file parse errors raise `ConfigError` (surfaced as `AuthError` when they originate inside `TokenStore`).
+
+| Situation | Error |
+|---|---|
+| No tokens stored | `AuthError("No access token stored...")` |
+| Refresh token expired / revoked | `AuthError("...generate and paste a new token pair")` |
+| Network failure during refresh/revoke | `AuthError("Token refresh/revoke failed: ...")` |
+| Malformed token values in config file | `AuthError("Malformed token data...")` or `ConfigError` from `load()` |
 
 ## DSP API
 

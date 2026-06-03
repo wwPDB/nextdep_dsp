@@ -36,7 +36,8 @@ def _hostname_to_fqdn_key(hostname: str) -> str | None:
 
 
 _ENV_MAP: dict[str, tuple[str, Callable[[str], object]]] = {
-    "ONEDEP_API_KEY": ("api_key", str),
+    "ONEDEP_ACCESS_TOKEN": ("access_token", str),
+    "ONEDEP_REFRESH_TOKEN": ("refresh_token", str),
     "ONEDEP_HOSTNAME": ("hostname", str),
     "ONEDEP_SSL_VERIFY": ("ssl_verify", lambda v: _parse_bool(v, "ONEDEP_SSL_VERIFY")),
     "ONEDEP_REDIRECT": ("redirect", lambda v: _parse_bool(v, "ONEDEP_REDIRECT")),
@@ -46,7 +47,8 @@ _ENV_MAP: dict[str, tuple[str, Callable[[str], object]]] = {
 
 @dataclass
 class DepositConfig:
-    api_key: str | None = None
+    access_token: str | None = None
+    refresh_token: str | None = None
     hostname: str = "https://deposit.wwpdb.org/deposition"
     ssl_verify: bool = True
     redirect: bool = True
@@ -56,8 +58,6 @@ class DepositConfig:
     config_path: Path = field(
         default_factory=lambda: Path.home() / ".config" / "nextdep" / "config.toml"
     )
-    access_token: str | None = None
-    refresh_token: str | None = None
 
     @staticmethod
     def _load_toml_file(path: Path) -> dict:
