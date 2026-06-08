@@ -342,7 +342,7 @@ class DepositApi:
 
     @handle_invalid_deposit_site
     def upload_file(
-        self, dep_id: str, file_path: str, file_type: Union[str, FileType], overwrite: bool = False
+        self, dep_id: str, file_path: str, file_type: Union[str, FileType], overwrite: bool = False, uploaded_bytes: int = 0
     ) -> DepositedFile:
         """
         Upload a file in a deposition
@@ -350,14 +350,13 @@ class DepositApi:
         :param file_path: File path
         :param file_type: Deposition file type
         :param overwrite: If true, overwrite all previously uploaded file with the same type
+        :param uploaded_bytes: Number of bytes already uploaded
         :return: File response
         """
-        files = {}
-        file_type_str = file_type
-
         if not os.path.exists(file_path):
             raise DepositApiException("Invalid input file", 404)
 
+        file_type_str = file_type
         if isinstance(file_type, FileType):
             file_type_str = file_type.value
 
@@ -372,14 +371,15 @@ class DepositApi:
                 if file.file_type.value == file_type_str:
                     self.remove_file(dep_id, file.file_id)
 
-        with open(file_path, "rb") as fp:
-            files["file"] = (file_name, fp, mime_type)
+        endpoint = f"depositions/{dep_id}/files/"
 
-            response = self._rest_adapter.post(f"depositions/{dep_id}/files/", data=data, files=files, content_type="")
-            response.data["file_type"] = response.data.pop("type")
-            response.data["file_id"] = response.data.pop("id")
+        response = self._rest_adapter.repost(endpoint, data, file_path, uploaded_bytes)
+        if not response:
+            raise DepositApiException("Error uploading file", 500)
+        response.data["file_type"] = response.data.pop("type")
+        response.data["file_id"] = response.data.pop("id")
 
-            return DepositedFile(**response.data)
+        return DepositedFile(**response.data)
 
     @handle_invalid_deposit_site
     def update_metadata(
