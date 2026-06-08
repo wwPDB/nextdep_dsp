@@ -342,7 +342,12 @@ class DepositApi:
 
     @handle_invalid_deposit_site
     def upload_file(
-        self, dep_id: str, file_path: str, file_type: Union[str, FileType], overwrite: bool = False, uploaded_bytes: int = 0
+        self,
+        dep_id: str,
+        file_path: str,
+        file_type: Union[str, FileType],
+        overwrite: bool = False,
+        uploaded_bytes: int = 0,
     ) -> DepositedFile:
         """
         Upload a file in a deposition

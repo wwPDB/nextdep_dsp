@@ -160,7 +160,7 @@ class RestAdapter:
             http_method="POST", endpoint=endpoint, params=params, data=data, files=files, content_type=content_type
         )
 
-    def repost(self, endpoint: str, data: dict, file_path: str, uploaded_bytes:int = 0) -> Optional[Response]:
+    def repost(self, endpoint: str, data: dict, file_path: str, uploaded_bytes: int = 0) -> Optional[Response]:
         """
         Perform POST requests
         Resumable with the same parameters as the last request
