@@ -1,7 +1,7 @@
 import pytest
 
-from nextdep_dsp.config import DepositConfig, _parse_bool
-from nextdep_dsp.exceptions import ConfigError
+from onedep_lib.config import DepositConfig, _parse_bool
+from onedep_lib.exceptions import ConfigError
 
 
 def test_parse_bool_true_values():
@@ -35,7 +35,7 @@ def test_load_defaults_when_no_file(monkeypatch, tmp_path):
 
 
 def test_load_reads_toml_file(monkeypatch, tmp_path):
-    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir = tmp_path / ".config" / "onedep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
         '[default]\nhostname = "https://example.com"\nssl_verify = false\nredirect = false\n'
@@ -48,7 +48,7 @@ def test_load_reads_toml_file(monkeypatch, tmp_path):
 
 
 def test_load_skips_missing_default_section(monkeypatch, tmp_path):
-    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir = tmp_path / ".config" / "onedep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text('[other]\nhostname = "https://other.example.com"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -57,7 +57,7 @@ def test_load_skips_missing_default_section(monkeypatch, tmp_path):
 
 
 def test_load_malformed_toml_raises(monkeypatch, tmp_path):
-    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir = tmp_path / ".config" / "onedep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text("this is not : valid toml [[\n")
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -66,7 +66,7 @@ def test_load_malformed_toml_raises(monkeypatch, tmp_path):
 
 
 def test_load_ignores_unknown_keys_in_file(monkeypatch, tmp_path):
-    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir = tmp_path / ".config" / "onedep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text('[default]\nunknown_key = "ignored"\nhostname = "https://example.com"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -75,7 +75,7 @@ def test_load_ignores_unknown_keys_in_file(monkeypatch, tmp_path):
 
 
 def test_load_empty_hostname_in_file_falls_back(monkeypatch, tmp_path):
-    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir = tmp_path / ".config" / "onedep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text('[default]\nhostname = ""\n')
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -133,7 +133,7 @@ def test_env_var_invalid_bool_raises(monkeypatch, tmp_path):
 
 
 def test_env_var_overrides_file(monkeypatch, tmp_path):
-    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir = tmp_path / ".config" / "onedep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text('[default]\nhostname = "https://file.example.com"\n')
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -196,10 +196,10 @@ def test_schema_base_url_env_override(monkeypatch):
     assert cfg.schema_base_url == "http://localhost:8080/schemas"
 
 
-def test_default_config_path_is_nextdep_toml(monkeypatch, tmp_path):
+def test_default_config_path_is_onedep_toml(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
     cfg = DepositConfig()
-    expected = tmp_path / ".config" / "nextdep" / "config.toml"
+    expected = tmp_path / ".config" / "onedep" / "config.toml"
     assert cfg.config_path == expected
 
 

@@ -1,20 +1,20 @@
 import pytest
 
-from nextdep_dsp.exceptions import (
+from onedep_lib.exceptions import (
     ApiError,
     AuthError,
     ConfigError,
     DepositApiException,
-    NextDepError,
+    OneDepError,
     SchemaError,
 )
 
 
-def test_all_errors_inherit_from_nextdep_error():
-    assert issubclass(AuthError, NextDepError)
-    assert issubclass(ApiError, NextDepError)
-    assert issubclass(ConfigError, NextDepError)
-    assert issubclass(SchemaError, NextDepError)
+def test_all_errors_inherit_from_onedep_error():
+    assert issubclass(AuthError, OneDepError)
+    assert issubclass(ApiError, OneDepError)
+    assert issubclass(ConfigError, OneDepError)
+    assert issubclass(SchemaError, OneDepError)
 
 
 def test_api_error_stores_status_code():
@@ -26,9 +26,9 @@ def test_api_error_stores_status_code():
 def test_deposit_api_exception_is_alias_for_api_error():
     assert DepositApiException is ApiError
     err = DepositApiException("Unauthorized", 401)
-    assert isinstance(err, NextDepError)
+    assert isinstance(err, OneDepError)
 
 
 def test_exceptions_are_catchable_as_base():
-    with pytest.raises(NextDepError):
+    with pytest.raises(OneDepError):
         raise AuthError("bad token")

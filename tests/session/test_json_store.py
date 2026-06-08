@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from nextdep_dsp.enums import Country, ExperimentType, FileType
-from nextdep_dsp.session.json_store import JsonSessionStore
-from nextdep_dsp.session.models import LocalFile, LocalSession
+from onedep_lib.enums import Country, ExperimentType, FileType
+from onedep_lib.session.json_store import JsonSessionStore
+from onedep_lib.session.models import LocalFile, LocalSession
 
 
 @pytest.fixture
@@ -116,7 +116,7 @@ def test_persists_across_store_instances(tmp_path: Path, session: LocalSession):
 
 def test_uses_configured_session_dir_when_base_dir_omitted(monkeypatch, tmp_path: Path):
     session_dir = tmp_path / "configured-sessions"
-    config_dir = tmp_path / ".config" / "nextdep"
+    config_dir = tmp_path / ".config" / "onedep"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
         f'[default]\nsession_dir = "{session_dir}"\n'

@@ -1,10 +1,10 @@
 from datetime import datetime
 import pytest
-from nextdep_dsp.apis.deposit.models import (
+from onedep_lib.apis.deposit.models import (
     WwPDBDeposition, DepositError, DepositedFile, DepositStatus, Experiment, PixelSpacing,
 )
-from nextdep_dsp.apis.deposit.enums import Status
-from nextdep_dsp.enums import ExperimentType, FileType
+from onedep_lib.apis.deposit.enums import Status
+from onedep_lib.enums import ExperimentType, FileType
 
 
 def _deposit(**overrides) -> WwPDBDeposition:

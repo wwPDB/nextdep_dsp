@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-from nextdep_dsp.enums import Country, ExperimentType, FileType
-from nextdep_dsp.session.models import LocalFile, LocalSession
-from nextdep_dsp.session.json_store import JsonSessionStore
+from onedep_lib.enums import Country, ExperimentType, FileType
+from onedep_lib.session.models import LocalFile, LocalSession
+from onedep_lib.session.json_store import JsonSessionStore
 
 
 def _make_session(session_id: str = "sess-1") -> LocalSession:

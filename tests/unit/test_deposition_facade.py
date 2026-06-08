@@ -1,8 +1,8 @@
 import pytest
 from pathlib import Path
-from nextdep_dsp.checks.report import CheckReport
-from nextdep_dsp.dsp import deposit_init, deposit_resume
-from nextdep_dsp.enums import Country, ExperimentType, FileType
+from onedep_lib.checks.report import CheckReport
+from onedep_lib.dsp import deposit_init, deposit_resume
+from onedep_lib.enums import Country, ExperimentType, FileType
 from tests.unit.apis.deposit.test_stub_api_client import StubApiClient
 
 

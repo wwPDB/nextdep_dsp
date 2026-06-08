@@ -1,6 +1,6 @@
 # DSP Mock Package
 
-![PyPI version](https://img.shields.io/pypi/v/nextdep_dsp.svg)
+![PyPI version](https://img.shields.io/pypi/v/onedep_lib.svg)
 
 Prepares data to be deposited into OneDep system through the Deposition API. JSON schemas served remotelly will be used to check metadata in mmCIF files and also check if the local deposition/session has all required files for the chosen experiment type. Checks will be carried before deposition is created on the server and files are uploaded. 
 
@@ -8,7 +8,7 @@ Prepares data to be deposited into OneDep system through the Deposition API. JSO
 
 `DepositConfig.load()` resolves settings from three sources in order of increasing priority:
 
-1. `~/.config/nextdep/config.toml` (lowest, persistent defaults)
+1. `~/.config/onedep/config.toml` (lowest, persistent defaults)
 2. Environment variables (override file values)
 3. Keyword arguments passed to `DepositConfig.load()` (highest priority)
 
@@ -24,9 +24,9 @@ The default values are:
 | `ssl_verify` | `true` | `[default]` / env / override |
 | `redirect` | `true` | `[default]` / env / override |
 | `schema_base_url` | `https://schemas.wwpdb.org/nextdep` | `[default]` / env / override |
-| `schema_cache_dir` | `~/.nextdep/schemas` | `[default]` / override |
-| `session_dir` | `~/.nextdep/sessions` | `[default]` / override |
-| `config_path` | `~/.config/nextdep/config.toml` | override only |
+| `schema_cache_dir` | `~/.onedep/schemas` | `[default]` / override |
+| `session_dir` | `~/.onedep/sessions` | `[default]` / override |
+| `config_path` | `~/.config/onedep/config.toml` | override only |
 
 ### Config file
 
@@ -45,8 +45,8 @@ hostname = "https://deposit.wwpdb.org/deposition"
 ssl_verify = true
 redirect = true
 schema_base_url = "https://schemas.wwpdb.org/nextdep"
-schema_cache_dir = "/home/you/.nextdep/schemas"
-session_dir = "/home/you/.nextdep/sessions"
+schema_cache_dir = "/home/you/.onedep/schemas"
+session_dir = "/home/you/.onedep/sessions"
 
 [auths.deposit_wwpdb_org]
 access_token = "eyJ..."
@@ -62,7 +62,7 @@ Unknown keys in `[default]` are ignored. An empty `hostname` is ignored so the d
 Load configuration with no arguments once the file is in place:
 
 ```python
-from nextdep_dsp.config import DepositConfig
+from onedep_lib.config import DepositConfig
 
 cfg = DepositConfig.load()
 print(cfg.access_token)   # populated from [auths.deposit_wwpdb_org] if present
@@ -96,13 +96,13 @@ Pass keyword arguments to `DepositConfig.load()` to override both the config fil
 ```python
 from pathlib import Path
 
-from nextdep_dsp.config import DepositConfig
+from onedep_lib.config import DepositConfig
 
 cfg = DepositConfig.load(
     api_key="your.jwt.token",
     ssl_verify=False,
-    schema_cache_dir=Path("/tmp/nextdep-schemas"),
-    session_dir=Path("/tmp/nextdep-sessions"),
+    schema_cache_dir=Path("/tmp/onedep-schemas"),
+    session_dir=Path("/tmp/onedep-sessions"),
 )
 ```
 
@@ -126,8 +126,8 @@ OneDep uses short-lived JWT access tokens (30-minute TTL) paired with long-lived
 Tokens are generated manually by a logged-in user in the OneDep web UI. There is no programmatic login flow in this library. Once you have a token pair, pass it to `TokenStore.store_tokens()`:
 
 ```python
-from nextdep_dsp.auths.token import TokenStore
-from nextdep_dsp.config import DepositConfig
+from onedep_lib.auths.token import TokenStore
+from onedep_lib.config import DepositConfig
 
 cfg = DepositConfig.load()
 store = TokenStore(config=cfg)
@@ -193,7 +193,7 @@ store.clear_tokens()
 
 ### Error handling
 
-All auth errors raise `nextdep_dsp.exceptions.AuthError`. Config file parse errors raise `ConfigError` (surfaced as `AuthError` when they originate inside `TokenStore`).
+All auth errors raise `onedep_lib.exceptions.AuthError`. Config file parse errors raise `ConfigError` (surfaced as `AuthError` when they originate inside `TokenStore`).
 
 | Situation | Error |
 |---|---|
@@ -209,7 +209,7 @@ The DSP (Deposition Software Provider) API is the high-level interface for third
 ### New deposition
 
 ```python
-import nextdep_dsp as dsp
+import onedep_lib as dsp
 
 with dsp.deposit_init(
     email="depositor@example.org",
@@ -275,7 +275,7 @@ See [`examples/resume_deposition.py`](examples/resume_deposition.py) for a compl
 ### List all sessions
 
 ```bash
-nextdep_dsp sessions list
+onedep_lib sessions list
 ```
 
 Displays a table of all local sessions with their metadata and registered files:
@@ -293,7 +293,7 @@ Sessions with no `Remote dep ID` have not been submitted yet. Pass `--base-dir` 
 Or use the command-line tool (start with the --help option):
 
 ```bash
-nextdep_dsp subcmd <args> <options>
+onedep_lib subcmd <args> <options>
 ```
 
 ## Features
@@ -308,7 +308,7 @@ nextdep_schema_compliance filecheck <exptype> --filetype <type> --filetype <type
 
 Documentation is built with [Zensical](https://zensical.org/) and deployed to GitHub Pages.
 
-<!-- * **Live site:** https://wmorellato.github.io/nextdep_dsp/ -->
+<!-- * **Live site:** https://wwPDB.github.io/onedep_lib/ -->
 * **Preview locally:** `just docs-serve` (serves at http://localhost:8000)
 * **Build:** `just docs-build`
 
@@ -322,14 +322,14 @@ To set up for local development:
 
 ```bash
 # Clone your fork
-git clone git@github.com:your_username/nextdep_dsp.git
-cd nextdep_dsp
+git clone git@github.com:your_username/onedep_lib.git
+cd onedep_lib
 
 # Install in editable mode with live updates
 uv tool install --editable .
 ```
 
-This installs the CLI globally but with live updates - any changes you make to the source code are immediately available when you run `nextdep_dsp`.
+This installs the CLI globally but with live updates - any changes you make to the source code are immediately available when you run `onedep_lib`.
 
 Run tests:
 

@@ -1,4 +1,4 @@
-from nextdep_dsp.checks.report import CheckIssue, CheckReport, CheckSeverity, CifLocation
+from onedep_lib.checks.report import CheckIssue, CheckReport, CheckSeverity, CifLocation
 
 
 def test_check_report_ok_when_no_issues():

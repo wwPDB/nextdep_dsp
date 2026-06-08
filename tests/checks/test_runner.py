@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from nextdep_dsp.checks.report import CheckSeverity
-from nextdep_dsp.checks.runner import CheckRunner
-from nextdep_dsp.enums import ExperimentType, FileType
-from nextdep_dsp.exceptions import SchemaError
-from nextdep_dsp.session.models import LocalFile
+from onedep_lib.checks.report import CheckSeverity
+from onedep_lib.checks.runner import CheckRunner
+from onedep_lib.enums import ExperimentType, FileType
+from onedep_lib.exceptions import SchemaError
+from onedep_lib.session.models import LocalFile
 
 
 class StubSchemaProvider:

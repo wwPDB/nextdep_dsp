@@ -1,4 +1,4 @@
-from nextdep_dsp.enums import Country, EMSubType, ExperimentType, FileType
+from onedep_lib.enums import Country, EMSubType, ExperimentType, FileType
 
 
 def test_experiment_types_have_expected_values():

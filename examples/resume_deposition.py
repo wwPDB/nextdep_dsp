@@ -17,7 +17,7 @@ from __future__ import annotations
 import sys
 import time
 
-import nextdep_dsp as dsp
+import onedep_lib as dsp
 
 # File to add on resume — swap for any valid file
 EXTRA_FILE = "/home/wbueno/repos/test_files/xray/2gc2.cif"

@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from nextdep_dsp.exceptions import SchemaError
-from nextdep_dsp.schemas.remote import RemoteSchemaProvider
+from onedep_lib.exceptions import SchemaError
+from onedep_lib.schemas.remote import RemoteSchemaProvider
 
 SAMPLE_SCHEMA = {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object"}
 

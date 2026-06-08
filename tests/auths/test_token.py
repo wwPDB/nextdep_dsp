@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from nextdep_dsp.auths.token import TokenStore
-from nextdep_dsp.config import DepositConfig
-from nextdep_dsp.exceptions import AuthError
+from onedep_lib.auths.token import TokenStore
+from onedep_lib.config import DepositConfig
+from onedep_lib.exceptions import AuthError
 
 
 def _make_jwt(exp_offset: int = 3600) -> str:

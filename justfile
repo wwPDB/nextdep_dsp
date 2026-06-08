@@ -1,4 +1,4 @@
-# Justfile for nextdep_dsp
+# Justfile for onedep_lib
 
 # Show available commands
 list:

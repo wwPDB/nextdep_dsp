@@ -1,5 +1,5 @@
 """
-Example: EM (Single Particle Analysis) deposition using the nextdep_dsp public API.
+Example: EM (Single Particle Analysis) deposition using the onedep_lib public API.
 
 Follows the sequence diagram in docs/deposit.mermaid:
   1. deposit_init()
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import time
 
-import nextdep_dsp as dsp
+import onedep_lib as dsp
 
 BASE = "/home/wbueno/repos/test_files/em"
 

@@ -1,8 +1,8 @@
 import dataclasses
 from datetime import datetime
 
-from nextdep_dsp.enums import Country, ExperimentType, FileType
-from nextdep_dsp.session.models import LocalFile, LocalSession
+from onedep_lib.enums import Country, ExperimentType, FileType
+from onedep_lib.session.models import LocalFile, LocalSession
 
 
 def test_local_session_fields():

@@ -1,8 +1,8 @@
 from typing import Union
-from nextdep_dsp.apis.deposit.models import (
+from onedep_lib.apis.deposit.models import (
     WwPDBDeposition, DepositedFile, DepositError, DepositStatus, Experiment,
 )
-from nextdep_dsp.enums import Country, FileType
+from onedep_lib.enums import Country, FileType
 
 
 def _stub_deposit(dep_id: str = "D_999", email: str = "test@example.com") -> WwPDBDeposition:
@@ -68,7 +68,7 @@ class StubApiClient:
 
 
 def test_stub_api_client_is_structurally_compatible():
-    from nextdep_dsp.apis.deposit.types import ApiClient
+    from onedep_lib.apis.deposit.types import ApiClient
     stub = StubApiClient()
     required = [
         "create_deposition", "get_all_depositions", "get_deposition",

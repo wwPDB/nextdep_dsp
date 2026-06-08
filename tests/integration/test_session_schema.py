@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from nextdep_dsp.checks.runner import CheckRunner
-from nextdep_dsp.enums import Country, ExperimentType, FileType
-from nextdep_dsp.schemas.remote import RemoteSchemaProvider
-from nextdep_dsp.session.json_store import JsonSessionStore
-from nextdep_dsp.session.models import LocalFile, LocalSession
+from onedep_lib.checks.runner import CheckRunner
+from onedep_lib.enums import Country, ExperimentType, FileType
+from onedep_lib.schemas.remote import RemoteSchemaProvider
+from onedep_lib.session.json_store import JsonSessionStore
+from onedep_lib.session.models import LocalFile, LocalSession
 
 
 @pytest.fixture

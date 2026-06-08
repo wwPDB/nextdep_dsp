@@ -1,8 +1,8 @@
 [project]
-site_name = "nextdep_dsp"
-site_url = "https://wmorellato.github.io/nextdep_dsp/"
-repo_url = "https://github.com/wmorellato/nextdep_dsp"
-repo_name = "wmorellato/nextdep_dsp"
+site_name = "onedep_lib"
+site_url = "https://wwPDB.github.io/onedep_lib/"
+repo_url = "https://github.com/wwPDB/onedep_lib"
+repo_name = "wwPDB/onedep_lib"
 
 nav = [
   { "Home" = "index.md" },
