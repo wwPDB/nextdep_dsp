@@ -132,7 +132,7 @@ def validate_api_key(api_key: str, configfile: str = None) -> bool:
         return False
 
     pattern = config.get("validation").get("regex")
-    if not re.match(r"%s" % pattern, api_key):
+    if not re.match(pattern, api_key):
         console.print("API key contains invalid characters.")
         return False
 

@@ -30,11 +30,7 @@ def inputs_fail():
 
 @pytest.fixture(scope="module")
 def inputs_exception():
-    return [
-        ("xray", [], None),
-        ("em", [], "tomography"),
-        ("em", ["vo-map", "img-emdb"], None)
-    ]
+    return [("xray", [], None), ("em", [], "tomography"), ("em", ["vo-map", "img-emdb"], None)]
 
 
 def test_required_files_pass(inputs_pass):
@@ -46,8 +42,9 @@ def test_required_files_pass(inputs_pass):
 def test_required_files_fail(inputs_fail):
     filec = FileCompliance()
     for exptype, filetype, subtype in inputs_fail:
-        assert not filec.inspect_params(exptype, filetype,
-                                        subtype), f"Validation should fail for {exptype} {filetype} {subtype}"
+        assert not filec.inspect_params(exptype, filetype, subtype), (
+            f"Validation should fail for {exptype} {filetype} {subtype}"
+        )
 
 
 def test_required_files_exception(inputs_exception):
