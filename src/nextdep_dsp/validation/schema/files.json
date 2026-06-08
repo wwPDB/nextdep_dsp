@@ -429,16 +429,16 @@
                   "contains": {
                     "enum": [
                       "nm-res-amb",
+                      "nm-res-ari",
                       "nm-res-bio",
                       "nm-res-cha",
                       "nm-res-cns",
                       "nm-res-cya",
                       "nm-res-dyn",
-                      "nm-res-dyn",
-                      "nm-res-dyn",
                       "nm-res-gro",
                       "nm-res-isd",
                       "nm-res-ros",
+                      "nm-res-sch",
                       "nm-res-syb",
                       "nm-res-xpl",
                       "nm-res-oth"
