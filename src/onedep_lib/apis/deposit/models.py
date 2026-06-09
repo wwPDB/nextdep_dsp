@@ -140,6 +140,7 @@ class DepositedFile:
     file_type: FileType
     created: datetime
     metadata: EmMapMetadata | None = None
+    uploadedBytes: int = 0
     errors: list[DepositError] = field(default_factory=list)
     warnings: list[DepositError] = field(default_factory=list)
 

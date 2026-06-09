@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import time
 
-import nextdep_dsp as dsp
+import onedep_lib as dsp
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -28,10 +28,10 @@ _console = Console(stderr=True)
 # ── Configuration ─────────────────────────────────────────────────────────────
 # Change all values marked with  <<<< CHANGE THIS  before running.
 
-EMAIL = "wbueno@ebi.ac.uk"  # <<<< CHANGE THIS
-USERS = ["0000-0003-1862-4770"]  # <<<< CHANGE THIS  (ORCID iD)
-COORD_FILE = "/home/wbueno/repos/test_files/xray/2gc2.cif"  # <<<< CHANGE THIS
-SF_FILE = "/home/wbueno/repos/test_files/xray/2gc2-sf.cif"  # <<<< CHANGE THIS
+EMAIL = "your.email@example.com"  # <<<< CHANGE THIS
+USERS = ["0000-0000-0000-0000"]  # <<<< CHANGE THIS  (ORCID iD)
+COORD_FILE = "/path/to/your/coord.cif"  # <<<< CHANGE THIS
+SF_FILE = "/path/to/your/sf.cif"  # <<<< CHANGE THIS
 
 
 def ok(msg: str) -> None:

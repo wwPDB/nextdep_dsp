@@ -156,6 +156,31 @@ def test_upload_file_chunked_sends_content_range(httpserver: HTTPServer, client:
     assert deposited.file_type is FileType.MMCIF_COORD
 
 
+def test_upload_file_chunked_final_response_includes_uploaded_bytes(
+    httpserver: HTTPServer, client: HttpApiClient, tmp_path
+):
+    test_file = tmp_path / "test.cif"
+    test_file.write_bytes(b"X" * 20)
+    httpserver.expect_ordered_request(
+        "/api/v1/depositions/D_800001/files/",
+        method="POST",
+        headers={"Content-Range": "bytes 0-7/20"},
+    ).respond_with_json({"uploadedBytes": 8})
+    httpserver.expect_ordered_request(
+        "/api/v1/depositions/D_800001/files/",
+        method="POST",
+        headers={"Content-Range": "bytes 8-15/20"},
+    ).respond_with_json({"uploadedBytes": 16})
+    httpserver.expect_ordered_request(
+        "/api/v1/depositions/D_800001/files/",
+        method="POST",
+        headers={"Content-Range": "bytes 16-19/20"},
+    ).respond_with_json({**_FILE_RESPONSE, "uploadedBytes": 20})
+    deposited = client.upload_file("D_800001", str(test_file), FileType.MMCIF_COORD, _chunk_size=8)
+    assert deposited.file_id == 1
+    assert deposited.file_type is FileType.MMCIF_COORD
+
+
 def test_upload_file_resumes_from_uploaded_bytes(httpserver: HTTPServer, client: HttpApiClient, tmp_path):
     test_file = tmp_path / "test.cif"
     test_file.write_bytes(b"X" * 16)
