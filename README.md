@@ -123,7 +123,11 @@ OneDep uses short-lived JWT access tokens (30-minute TTL) paired with long-lived
 
 ### Getting a token pair
 
-Tokens are generated manually by a logged-in user in the OneDep web UI. There is no programmatic login flow in this library. Once you have a token pair, pass it to `TokenStore.store_tokens()`:
+Tokens are generated manually by a logged-in user in the OneDep web UI. There is no programmatic login flow in this library.
+
+### Storing tokens
+
+Once you have a token pair from the web UI, store it with `TokenStore.store_tokens()`:
 
 ```python
 from onedep_lib.auths.token import TokenStore
@@ -274,34 +278,26 @@ See [`examples/resume_deposition.py`](examples/resume_deposition.py) for a compl
 
 ### List all sessions
 
-```bash
-onedep_lib sessions list
+Use `list_sessions()` to retrieve all local sessions with their registered files, ordered newest first:
+
+```python
+import onedep_lib as dsp
+from pathlib import Path
+
+sessions = dsp.list_sessions()
+
+for session, files in sessions:
+    print(session.session_id, session.created_at, session.email)
+    print("  experiment:", session.experiment_type)
+    print("  remote dep:", session.remote_dep_id or "(not submitted)")
+    for f in files:
+        print("  file:", f.file_path, f.file_type)
 ```
 
-Displays a table of all local sessions with their metadata and registered files:
+Sessions where `remote_dep_id` is `None` have not been submitted yet. To inspect sessions stored in a non-default location, pass a `base_dir`:
 
-```
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Session ID                           ┃ Created          ┃ Email                 ┃ Experiment ┃ Remote dep ID ┃ Files                          ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ 051dcbe3-59c7-4cf8-8af9-675f375b82ae │ 2026-04-08 11:33 │ depositor@example.org │    xray    │   D_800279    │ 2gc2.cif  co-cif               │
-│                                      │                  │                       │            │               │ 2gc2-sf.cif  xs-cif            │
-└──────────────────────────────────────┴──────────────────┴───────────────────────┴────────────┴───────────────┴────────────────────────────────┘
-```
-
-Sessions with no `Remote dep ID` have not been submitted yet. Pass `--base-dir` to inspect sessions stored in a non-default location.
-Or use the command-line tool (start with the --help option):
-
-```bash
-onedep_lib subcmd <args> <options>
-```
-
-## Features
-
-* Test required files
-
-```bash
-nextdep_schema_compliance filecheck <exptype> --filetype <type> --filetype <type> ...
+```python
+sessions = dsp.list_sessions(base_dir=Path("/custom/session/dir"))
 ```
 
 ## Documentation
@@ -318,19 +314,6 @@ Docs deploy automatically on push to `main` via GitHub Actions. To enable this, 
 
 ## Development
 
-To set up for local development:
-
-```bash
-# Clone your fork
-git clone git@github.com:your_username/onedep_lib.git
-cd onedep_lib
-
-# Install in editable mode with live updates
-uv tool install --editable .
-```
-
-This installs the CLI globally but with live updates - any changes you make to the source code are immediately available when you run `onedep_lib`.
-
 Run tests:
 
 ```bash
@@ -342,8 +325,3 @@ Run quality checks (format, lint, type check, test):
 ```bash
 just qa
 ```
-
-## Author
-
-- Weslley [...]
-- James [...]
